@@ -246,6 +246,21 @@ cada servicio por sus comandos.
 **New Project → Add Plugin → PostgreSQL.** Railway crea `DATABASE_URL` sola; no
 la escribas a mano.
 
+### Cómo encuentra Railway la configuración
+
+Railpack lee `railway.json` de la raíz del repo **sin que haya que configurar
+nada**, y ese archivo describe el servicio de la API. Por eso la API no necesita
+que le escribas comandos en la interfaz.
+
+Es importante entender por qué: Railpack falla *antes* de compilar si no detecta
+un comando de arranque, y en un monorepo el `package.json` de la raíz no tiene
+`start` — es solo el contenedor de los workspaces. El `railway.json` de la raíz
+se lo dice antes de que llegue a rendirse.
+
+El servicio de la web sí necesita un ajuste, porque los dos salen del mismo repo
+y solo uno puede usar el archivo por defecto: se le indica
+`apps/web/railway.json` en *Settings → Config-as-code*.
+
 ### 2. Servicio de la API
 
 **New Service → GitHub Repo →** `Gina_Boutique`. En *Settings*:
@@ -253,9 +268,7 @@ la escribas a mano.
 | Campo            | Valor                                                                        |
 | ---------------- | ---------------------------------------------------------------------------- |
 | Root Directory   | *(vacío)*                                                                     |
-| Build Command    | `npm ci && npm run build -w @gina/shared && npm run build -w @gina/api`      |
-| Start Command    | `npm start -w @gina/api`                                                      |
-| Watch Paths      | `apps/api/**`, `packages/shared/**`                                           |
+| Build / Start    | *no tocar* — los toma de `railway.json` en la raíz del repo                   |
 
 Variables (*Settings → Variables*):
 
@@ -277,9 +290,7 @@ Luego **Settings → Networking → Generate Domain** para obtener la URL públi
 | Campo            | Valor                                                                        |
 | ---------------- | ---------------------------------------------------------------------------- |
 | Root Directory   | *(vacío)*                                                                     |
-| Build Command    | `npm ci && npm run build -w @gina/shared && npm run build -w @gina/web`      |
-| Start Command    | `npm start -w @gina/web`                                                      |
-| Watch Paths      | `apps/web/**`, `packages/shared/**`                                           |
+| Config-as-code   | `apps/web/railway.json`                                                       |
 
 Variable:
 
