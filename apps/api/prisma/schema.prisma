@@ -1,0 +1,219 @@
+// Gina Boutique — modelo de datos
+// PostgreSQL (Railway). DATABASE_URL la genera Railway al agregar el plugin.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  cliente
+  admin
+}
+
+enum EstadoOrden {
+  pendiente
+  pagado
+  enviado
+  entregado
+  cancelado
+}
+
+enum MetodoPago {
+  tarjeta
+  contra_entrega
+}
+
+enum TipoPromocion {
+  porcentaje
+  monto_fijo
+}
+
+model User {
+  id           String    @id @default(cuid())
+  nombre       String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  telefono     String?
+  direccion    String?
+  rol          Rol       @default(cliente)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  cart          Cart?
+  orders        Order[]
+  addresses     Address[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+/// Refresh tokens guardados hasheados para poder revocar sesiones.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Category {
+  id            String   @id @default(cuid())
+  nombre        String
+  slug          String   @unique
+  imagen        String?
+  orden         Int      @default(0)
+  /// ej. para "Mujer": ["vestidos", "blusas", "pantalones", "faldas"]
+  subcategorias String[] @default([])
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  products   Product[]
+  promotions Promotion[]
+
+  @@index([orden])
+  @@map("categories")
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  nombre       String
+  descripcion  String   @default("")
+  precio       Decimal  @db.Decimal(10, 2)
+  precioOferta Decimal? @map("precio_oferta") @db.Decimal(10, 2)
+  categoriaId  String   @map("categoria_id")
+  subcategoria String?
+  tallas       String[] @default([])
+  colores      String[] @default([])
+  stock        Int      @default(0)
+  imagenes     String[] @default([])
+  destacado    Boolean  @default(false)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  categoria  Category    @relation(fields: [categoriaId], references: [id])
+  cartItems  CartItem[]
+
+  @@index([categoriaId, activo])
+  @@index([destacado, activo])
+  @@index([createdAt])
+  @@map("products")
+}
+
+model Promotion {
+  id           String        @id @default(cuid())
+  titulo       String
+  descripcion  String        @default("")
+  tipo         TipoPromocion
+  valor        Decimal       @db.Decimal(10, 2)
+  /// Promo por lista de productos…
+  productoIds  String[]      @default([]) @map("producto_ids")
+  /// …o por categoría completa. Si ambos van vacíos aplica a toda la tienda.
+  categoriaId  String?       @map("categoria_id")
+  fechaInicio  DateTime      @map("fecha_inicio")
+  fechaFin     DateTime      @map("fecha_fin")
+  bannerImagen String?       @map("banner_imagen")
+  activo       Boolean       @default(true)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  categoria Category? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+
+  @@index([activo, fechaInicio, fechaFin])
+  @@map("promotions")
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+/// Relacional en vez de jsonb: así el stock y el precio se validan por FK.
+model CartItem {
+  id         String  @id @default(cuid())
+  cartId     String  @map("cart_id")
+  productoId String  @map("producto_id")
+  cantidad   Int     @default(1)
+  talla      String?
+  color      String?
+
+  cart     Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  producto Product @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productoId, talla, color])
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+model Order {
+  id     String @id @default(cuid())
+  /// Número corto legible para el cliente, ej. GB-000123
+  numero String @unique
+  userId String @map("user_id")
+
+  /// Snapshot inmutable de lo comprado (nombre y precio del momento de la compra).
+  items Json
+
+  subtotal   Decimal @db.Decimal(10, 2)
+  /// Copiado desde COSTO_ENVIO_LPS al crear la orden, no recalculado después.
+  costoEnvio Decimal @map("costo_envio") @db.Decimal(10, 2)
+  total      Decimal @db.Decimal(10, 2)
+
+  direccionEnvio   String  @map("direccion_envio")
+  departamento     String
+  municipio        String
+  referencia       String?
+  telefonoContacto String  @map("telefono_contacto")
+  notas            String?
+
+  estado                EstadoOrden @default(pendiente)
+  metodoPago            MetodoPago  @map("metodo_pago")
+  pixelpayTransactionId String?     @map("pixelpay_transaction_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([estado])
+  @@map("orders")
+}
+
+model Address {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  alias             String
+  nombreCompleto    String   @map("nombre_completo")
+  telefonoContacto  String   @map("telefono_contacto")
+  direccionCompleta String   @map("direccion_completa")
+  departamento      String
+  municipio         String
+  referencia        String?
+  esPrincipal       Boolean  @default(false) @map("es_principal")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}

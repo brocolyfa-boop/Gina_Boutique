@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+npm-debug.log*
+.DS_Store
+coverage/
+.turbo/
+.vite/
+.expo/
+*.apk
+*.aab
+apps/api/prisma/dev.db*

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  verificar:
+    name: Lint, typecheck y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # El cliente de Prisma se genera antes del typecheck: los tipos de
+      # @prisma/client no existen hasta que corre `prisma generate`.
+      - name: Generar cliente de Prisma
+        run: npm run db:generate -w @gina/api
+
+      - name: Validar schema de Prisma
+        run: npx prisma validate --schema apps/api/prisma/schema.prisma
+
+      - name: Compilar paquete compartido
+        run: npm run build -w @gina/shared
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
