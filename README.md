@@ -230,18 +230,95 @@ del día y de la semana, pedidos pendientes y los 10 productos más vendidos. La
 
 ## Despliegue en Railway
 
-1. **New Project → Deploy from GitHub repo →** `Gina_Boutique`.
-2. **Add Plugin → PostgreSQL.** Railway crea `DATABASE_URL` sola.
-3. En el servicio de la API: **Settings → Root Directory** = `apps/api`,
-   *Build* = `npm run build`, *Start* = `npm start`.
-   `npm start` corre `prisma migrate deploy` antes de arrancar, así que las
-   migraciones se aplican solas en cada deploy.
-4. **Settings → Variables:** agregar `JWT_SECRET`, `JWT_REFRESH_SECRET`,
-   `PIXELPAY_*`, `COSTO_ENVIO_LPS` y `CORS_ORIGINS`. `PORT` la inyecta Railway.
-5. Sembrar una vez, desde local apuntando a la base de Railway:
-   `DATABASE_URL="<la de Railway>" npm run db:seed`
+Son **dos servicios** (API y web) sobre **una misma base de datos**, dentro del
+mismo proyecto de Railway.
 
-Considera pasar el repo a privado antes de subir la lógica de pagos:
+### Lo que NO hay que hacer
+
+No pongas *Root Directory* en `apps/api` ni en `apps/web`. Esto es un monorepo
+con workspaces de npm: los dos apps dependen de `@gina/shared`, que vive fuera de
+esas carpetas. Si acotas el root, la build falla porque no encuentra el paquete
+compartido. **Root Directory se deja vacío (la raíz del repo)** y se distingue
+cada servicio por sus comandos.
+
+### 1. Base de datos
+
+**New Project → Add Plugin → PostgreSQL.** Railway crea `DATABASE_URL` sola; no
+la escribas a mano.
+
+### 2. Servicio de la API
+
+**New Service → GitHub Repo →** `Gina_Boutique`. En *Settings*:
+
+| Campo            | Valor                                                                        |
+| ---------------- | ---------------------------------------------------------------------------- |
+| Root Directory   | *(vacío)*                                                                     |
+| Build Command    | `npm ci && npm run build -w @gina/shared && npm run build -w @gina/api`      |
+| Start Command    | `npm start -w @gina/api`                                                      |
+| Watch Paths      | `apps/api/**`, `packages/shared/**`                                           |
+
+Variables (*Settings → Variables*):
+
+- `DATABASE_URL` → referenciar la del plugin de Postgres
+- `JWT_SECRET` y `JWT_REFRESH_SECRET` → `openssl rand -base64 48` cada uno
+- `COSTO_ENVIO_LPS` → `65`
+- `CORS_ORIGINS` → la URL pública de la web (paso 3). Sin esto el navegador
+  bloquea todos los POST y no se puede ni iniciar sesión.
+
+`npm start` corre `prisma migrate deploy` antes de arrancar, así que las
+migraciones se aplican solas en cada deploy.
+
+Luego **Settings → Networking → Generate Domain** para obtener la URL pública.
+
+### 3. Servicio de la web
+
+**New Service → GitHub Repo →** el mismo repo. En *Settings*:
+
+| Campo            | Valor                                                                        |
+| ---------------- | ---------------------------------------------------------------------------- |
+| Root Directory   | *(vacío)*                                                                     |
+| Build Command    | `npm ci && npm run build -w @gina/shared && npm run build -w @gina/web`      |
+| Start Command    | `npm start -w @gina/web`                                                      |
+| Watch Paths      | `apps/web/**`, `packages/shared/**`                                           |
+
+Variable:
+
+- `VITE_API_URL` → la URL pública de la API, sin barra final
+  (ej. `https://gina-api.up.railway.app`)
+
+Ojo con `VITE_API_URL`: Vite la incrusta **en el momento de compilar**, no la lee
+al arrancar. Si la cambias después, hay que volver a desplegar para que surta
+efecto.
+
+`npm start` levanta `apps/web/server.js`, un servidor estático con *fallback* a
+`index.html`. Esto no es un adorno: sin él, entrar directo a `/catalogo` o
+recargar en `/producto/abc` daría 404, porque en el disco solo existe
+`index.html` y el enrutado ocurre en el navegador.
+
+### 4. Cerrar el círculo del CORS
+
+Con la URL de la web ya generada, vuelve al servicio de la API y pon esa URL en
+`CORS_ORIGINS`. Es el paso que más se olvida y el síntoma es confuso: el catálogo
+carga (son GET) pero iniciar sesión o comprar falla.
+
+### 5. Sembrar datos (una sola vez)
+
+Desde tu máquina, apuntando a la base de Railway:
+
+```bash
+DATABASE_URL="<la DATABASE_URL de Railway>" npm run db:seed
+```
+
+Cambia la contraseña del usuario admin antes de abrir la tienda al público.
+
+### Nota sobre la rama
+
+Railway despliega desde la rama que le indiques, `main` por defecto. El trabajo
+de las fases 2 y 3 va en `claude/gina-boutique-setup-vetm41`, así que **hay que
+mezclar el PR a `main`** (o apuntar Railway a esa rama) para que lo desplegado
+incluya la tienda y no solo la API.
+
+Considera pasar el repo a privado antes de conectar cobros con tarjeta:
 Settings → General → Danger Zone → Change visibility.
 
 ## Notas de seguridad
