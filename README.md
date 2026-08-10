@@ -3,9 +3,12 @@
 Tienda en línea para el mercado de Honduras. Un solo backend con dos frontends:
 web (desktop-first) y app Android (React Native / Expo).
 
-> **Estado actual — Fases 1 y 2 completas.** La API y la tienda web funcionan de
-> punta a punta: catálogo, carrito, checkout y panel de administración. Falta la
-> app Android (fase 3) y conectar una pasarela de tarjeta (ver
+> **Estado actual — Fases 1 y 2 completas y desplegadas.**
+>
+> - Tienda: https://ginaweb-production.up.railway.app
+> - API: https://ginaboutique-production.up.railway.app
+>
+> Falta la app Android (fase 3) y conectar una pasarela de tarjeta (ver
 > [Roadmap](#roadmap)).
 
 ## Stack
