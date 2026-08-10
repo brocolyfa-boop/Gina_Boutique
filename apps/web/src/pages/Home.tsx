@@ -48,42 +48,60 @@ function Promociones() {
 
   if (!data || data.length === 0) return null;
 
+  const imagenPromocion = (promo: PromocionDTO) => {
+    // La foto de campaña vive con la tienda para que no dependa de un servicio
+    // externo. Las imágenes de seed de placehold.co son solo texto de prueba y
+    // no deben mostrarse como fondo en producción.
+    if (promo.titulo === 'Temporada de Vestidos — 25% OFF') {
+      return '/images/promocion-vestido-rojo.png';
+    }
+
+    return promo.bannerImagen?.includes('placehold.co') ? null : promo.bannerImagen;
+  };
+
   return (
     <section className="mx-auto max-w-7xl px-4 lg:px-8">
       <div className="grid gap-6 lg:grid-cols-2">
-        {data.map((promo) => (
-          <article
-            key={promo.id}
-            className="relative flex min-h-[16rem] flex-col justify-end overflow-hidden bg-tinta p-8 text-white"
-          >
-            {promo.bannerImagen && (
-              <img
-                src={promo.bannerImagen}
-                alt=""
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover opacity-30"
-              />
-            )}
-            <div className="relative">
-              <p className="etiqueta text-white/70">Promoción</p>
-              <h2 className="mt-2 text-3xl leading-tight">{promo.titulo}</h2>
-              <p className="mt-2 max-w-md text-sm text-white/80">{promo.descripcion}</p>
-              <div className="mt-5">
-                <Cuenta hasta={promo.fechaFin} />
+        {data.map((promo) => {
+          const imagen = imagenPromocion(promo);
+
+          return (
+            <article
+              key={promo.id}
+              className="relative flex min-h-[24rem] flex-col justify-end overflow-hidden bg-tinta p-8 text-white"
+            >
+              {imagen && (
+                <img
+                  src={imagen}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                />
+              )}
+              {imagen && (
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-black/10" />
+              )}
+              <div className="relative max-w-md">
+                <p className="etiqueta text-white/70">Promoción</p>
+                <h2 className="mt-2 text-3xl leading-tight">{promo.titulo}</h2>
+                <p className="mt-2 max-w-md text-sm text-white/80">{promo.descripcion}</p>
+                <div className="mt-5">
+                  <Cuenta hasta={promo.fechaFin} />
+                </div>
+                <Link
+                  to={
+                    promo.categoriaId
+                      ? `/catalogo?categoria=${promo.categoriaId}`
+                      : '/catalogo?enOferta=true'
+                  }
+                  className="mt-6 inline-block border border-white px-6 py-3 text-xs uppercase tracking-etiqueta transition hover:bg-white hover:text-tinta"
+                >
+                  Ver la promoción
+                </Link>
               </div>
-              <Link
-                to={
-                  promo.categoriaId
-                    ? `/catalogo?categoria=${promo.categoriaId}`
-                    : '/catalogo?enOferta=true'
-                }
-                className="mt-6 inline-block border border-white px-6 py-3 text-xs uppercase tracking-etiqueta transition hover:bg-white hover:text-tinta"
-              >
-                Ver la promoción
-              </Link>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
