@@ -63,19 +63,49 @@ export type Rol = (typeof ROLES)[number];
 export const TIPOS_PROMOCION = ['porcentaje', 'monto_fijo'] as const;
 export type TipoPromocion = (typeof TIPOS_PROMOCION)[number];
 
-/** Identidad visual. Reemplazar LOGO_URL y PRIMARY cuando estén definitivos. */
+/**
+ * Identidad visual de Gina Boutique. Color principal: blanco.
+ *
+ * Una marca blanca no puede pintar botones ni texto con su propio color, así que
+ * la paleta se construye al revés de lo habitual: el blanco es el lienzo y el
+ * contraste (`contraste`) es lo que se usa para tipografía, botones y bordes.
+ * Nunca uses `primary` como color de texto ni de fondo de un botón.
+ */
 export const MARCA = {
   nombre: 'Gina Boutique',
-  logoUrl: 'https://placehold.co/320x120/B03052/FFFFFF?text=Gina+Boutique',
+  tagline: 'Descubre la moda que te hace brillar',
+  /**
+   * Monograma "GR" en negro sobre blanco. Placeholder hasta que el archivo esté
+   * subido a Cloudinary; al reemplazar esta URL, web y mobile lo toman de aquí.
+   */
+  logoUrl: 'https://placehold.co/320x320/FFFFFF/111111?text=GR',
   colores: {
-    /** Color principal de marca (placeholder hasta tener el definitivo). */
-    primary: '#B03052',
-    primaryDark: '#7E2039',
-    accent: '#E8B4B8',
-    fondo: '#FAF7F5',
-    texto: '#1F1B1C',
-    /** El marco blanco del checkout de pago. */
+    /** Color principal de marca: blanco. Es el lienzo, no la tinta. */
+    primary: '#FFFFFF',
+    /** Tinta de la marca: tipografía, botones e iconos sobre el blanco. */
+    contraste: '#111111',
+    /** Gris cálido para bordes y separadores; el blanco puro necesita límites. */
+    borde: '#E5E2E0',
+    /** Texto secundario, precios tachados, metadatos. */
+    textoSuave: '#6B6663',
+    /** Fondo de la página: un blanco roto, para que las tarjetas blancas resalten. */
+    fondo: '#FAF9F8',
+    /** Superficie de tarjetas y modales: blanco puro. */
+    superficie: '#FFFFFF',
+    /** Acento discreto para etiquetas de oferta y el badge del carrito. */
+    acento: '#B03052',
+    /** El marco blanco del checkout de pago (borde + fondo + sombra suave). */
     marcoPago: '#FFFFFF',
+  },
+  /**
+   * Tipografía tomada del logo: serif de alto contraste para títulos, sans con
+   * espaciado amplio en mayúsculas para etiquetas y el tagline.
+   */
+  tipografia: {
+    display: "'Playfair Display', 'Cormorant Garamond', Georgia, serif",
+    texto: "'Inter', 'Helvetica Neue', system-ui, sans-serif",
+    /** Las etiquetas van en mayúsculas con este tracking, como en el logo. */
+    trackingEtiqueta: '0.18em',
   },
 } as const;
 

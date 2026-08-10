@@ -195,8 +195,26 @@ Settings → General → Danger Zone → Change visibility.
 - [ ] **Fase 3** — App Android con Expo (bottom tabs, scroll infinito) y build
       `.aab` con `eas build -p android`.
 
-## Pendientes de definir
+## Identidad de marca
 
-- **Logo y color de marca.** Están como placeholder en
-  `packages/shared/src/constants.ts` (`MARCA.logoUrl` y `MARCA.colores.primary`,
-  hoy `#B03052`). Al reemplazarlos ahí, web y mobile los toman de una sola vez.
+Definida en `packages/shared/src/constants.ts` (`MARCA`), en un solo lugar del
+que tiran web y mobile.
+
+- **Nombre:** Gina Boutique · **Tagline:** *Descubre la moda que te hace brillar*
+- **Color principal: blanco** (`#FFFFFF`), con negro (`#111111`) como tinta.
+- **Logo:** monograma "GR" en negro sobre blanco, serif de alto contraste.
+
+Una marca blanca invierte la lógica normal de una paleta: el blanco es el lienzo,
+no la tinta. Por eso `MARCA.colores` incluye `contraste` (`#111111`) para
+tipografía y botones, `borde` para separar superficies blancas entre sí, y un
+`fondo` blanco roto (`#FAF9F8`) para que las tarjetas blancas resalten. **Nunca
+uses `primary` como color de texto ni de fondo de botón** — desaparecería.
+
+Ventaja para el checkout: el "marco blanco" que pediste para el formulario de
+pago deja de ser un parche y pasa a ser coherente con la marca. La separación se
+logra con borde, sombra suave y el blanco roto del fondo, no con color.
+
+### Pendiente
+
+- **Subir el archivo del logo.** `MARCA.logoUrl` apunta a un placeholder hasta
+  que el PNG esté en Cloudinary; al cambiar esa URL, los tres apps lo toman.

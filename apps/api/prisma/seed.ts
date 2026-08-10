@@ -8,8 +8,9 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const img = (texto: string, color = 'B03052') =>
-  `https://placehold.co/800x1000/${color}/FFFFFF?text=${encodeURIComponent(texto)}`;
+// Placeholders en blanco con tinta negra, alineados con la identidad de la marca.
+const img = (texto: string, fondo = 'FFFFFF', tinta = '111111') =>
+  `https://placehold.co/800x1000/${fondo}/${tinta}?text=${encodeURIComponent(texto)}`;
 
 const CATEGORIAS = [
   {
@@ -23,28 +24,28 @@ const CATEGORIAS = [
     nombre: 'Hombre',
     slug: 'hombre',
     orden: 2,
-    imagen: img('Hombre', '7E2039'),
+    imagen: img('Hombre'),
     subcategorias: ['camisas', 'camisetas', 'pantalones', 'shorts'],
   },
   {
     nombre: 'Niños',
     slug: 'ninos',
     orden: 3,
-    imagen: img('Ninos', 'E8B4B8'),
+    imagen: img('Ninos'),
     subcategorias: ['niña', 'niño', 'bebé'],
   },
   {
     nombre: 'Calzado',
     slug: 'calzado',
     orden: 4,
-    imagen: img('Calzado', '1F1B1C'),
+    imagen: img('Calzado', '111111', 'FFFFFF'),
     subcategorias: ['sandalias', 'tenis', 'tacones', 'botas'],
   },
   {
     nombre: 'Accesorios',
     slug: 'accesorios',
     orden: 5,
-    imagen: img('Accesorios', 'B03052'),
+    imagen: img('Accesorios'),
     subcategorias: ['bolsos', 'joyería', 'cinturones', 'lentes'],
   },
 ];
@@ -258,7 +259,10 @@ async function main() {
       tallas: p.tallas,
       colores: p.colores,
       stock: p.stock,
-      imagenes: [img(p.nombre.split(' ')[0] ?? 'Gina'), img(p.nombre.split(' ')[0] ?? 'Gina', '7E2039')],
+      imagenes: [
+        img(p.nombre.split(' ')[0] ?? 'Gina'),
+        img(p.nombre.split(' ')[0] ?? 'Gina', 'F5F3F1'),
+      ],
       destacado: p.destacado ?? false,
       activo: true,
     };
@@ -286,7 +290,7 @@ async function main() {
       productoIds: [],
       fechaInicio: ahora,
       fechaFin: en10Dias,
-      bannerImagen: 'https://placehold.co/1600x600/B03052/FFFFFF?text=25%25+OFF+Vestidos',
+      bannerImagen: 'https://placehold.co/1600x600/FFFFFF/111111?text=25%25+OFF+Vestidos',
       activo: true,
     },
     {
@@ -301,7 +305,7 @@ async function main() {
       ].filter((id): id is string => Boolean(id)),
       fechaInicio: ahora,
       fechaFin: en3Dias,
-      bannerImagen: 'https://placehold.co/1600x600/1F1B1C/FFFFFF?text=L+100+OFF+Calzado',
+      bannerImagen: 'https://placehold.co/1600x600/111111/FFFFFF?text=L+100+OFF+Calzado',
       activo: true,
     },
   ];
