@@ -77,6 +77,10 @@ export const MARCA = {
   /**
    * Monograma "GR" en negro sobre blanco. Placeholder hasta que el archivo esté
    * subido a Cloudinary; al reemplazar esta URL, web y mobile lo toman de aquí.
+   *
+   * El logo original incluye el texto "GR VARIEDADES", pero el nombre de la
+   * tienda es Gina Boutique: el monograma se usa como imagen de marca (header,
+   * favicon) y el nombre va aparte, en texto. No mezclar los dos rótulos.
    */
   logoUrl: 'https://placehold.co/320x320/FFFFFF/111111?text=GR',
   colores: {

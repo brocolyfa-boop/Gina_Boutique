@@ -204,6 +204,11 @@ que tiran web y mobile.
 - **Color principal: blanco** (`#FFFFFF`), con negro (`#111111`) como tinta.
 - **Logo:** monograma "GR" en negro sobre blanco, serif de alto contraste.
 
+El logo original trae el texto "GR VARIEDADES", pero el nombre de la tienda es
+**Gina Boutique**. El monograma se usa como imagen (header, favicon) y el nombre
+va aparte en texto; en el header, los correos y las órdenes siempre dice
+"Gina Boutique".
+
 Una marca blanca invierte la lógica normal de una paleta: el blanco es el lienzo,
 no la tinta. Por eso `MARCA.colores` incluye `contraste` (`#111111`) para
 tipografía y botones, `borde` para separar superficies blancas entre sí, y un
