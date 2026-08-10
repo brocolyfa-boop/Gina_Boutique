@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-fondo text-tinta font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Etiquetas en mayúsculas con tracking amplio, como en el logo. */
+  .etiqueta {
+    @apply text-xs uppercase tracking-etiqueta text-suave;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-none px-6 py-3 text-sm
+      font-medium uppercase tracking-etiqueta transition disabled:cursor-not-allowed
+      disabled:opacity-40;
+  }
+
+  /* La marca es blanca, así que el botón principal va en tinta, no en "primary". */
+  .btn-principal {
+    @apply btn bg-tinta text-white hover:bg-black;
+  }
+
+  .btn-secundario {
+    @apply btn border border-tinta bg-transparent text-tinta hover:bg-tinta hover:text-white;
+  }
+
+  .tarjeta {
+    @apply border border-borde bg-superficie shadow-tarjeta;
+  }
+
+  .campo {
+    @apply w-full border border-borde bg-white px-4 py-3 text-sm outline-none
+      transition placeholder:text-suave/60 focus:border-tinta;
+  }
+
+  /* El marco blanco del checkout de pago. */
+  .marco-pago {
+    @apply border border-borde bg-white p-6 shadow-marco md:p-8;
+  }
+}
+
+/* El esqueleto de carga: un pulso discreto en gris cálido. */
+@keyframes latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.skeleton {
+  animation: latido 1.4s ease-in-out infinite;
+  background-color: #ece9e7;
+}

@@ -26,8 +26,11 @@ export function crearApp() {
     cors({
       origin(origin, cb) {
         // Sin Origin = app nativa (React Native) o curl: se permite.
-        if (!origin || env.corsOrigins.includes(origin)) return cb(null, true);
-        cb(new Error(`Origen no permitido por CORS: ${origin}`));
+        // Un origen no permitido se rechaza devolviendo `false`, no lanzando:
+        // lanzar convertía un problema de configuración en un 500 con el
+        // mensaje interno dentro, y el navegador ya bloquea la respuesta al no
+        // ver la cabecera. Así el fallo se diagnostica en vez de confundir.
+        cb(null, !origin || env.corsOrigins.includes(origin));
       },
       credentials: true,
     }),

@@ -3,9 +3,9 @@
 Tienda en línea para el mercado de Honduras. Un solo backend con dos frontends:
 web (desktop-first) y app Android (React Native / Expo).
 
-> **Estado actual — Fase 1 de 3.** Ya están el monorepo, el modelo de datos y la
-> API de autenticación + catálogo. La web, la app móvil, el carrito, el checkout
-> con PixelPay y el panel de administración vienen en las siguientes fases (ver
+> **Estado actual — Fases 1 y 2 completas.** La API y la tienda web funcionan de
+> punta a punta: catálogo, carrito, checkout y panel de administración. Falta la
+> app Android (fase 3) y conectar una pasarela de tarjeta (ver
 > [Roadmap](#roadmap)).
 
 ## Stack
@@ -14,10 +14,10 @@ web (desktop-first) y app Android (React Native / Expo).
 | --------------- | ------------------------------------------------- |
 | Backend         | Node.js 22 + Express + TypeScript                 |
 | Base de datos   | PostgreSQL (Railway) + Prisma ORM                 |
-| Web             | React + Vite + TailwindCSS *(fase 2)*             |
+| Web             | React + Vite + TailwindCSS + React Query          |
 | Android         | React Native + Expo *(fase 3)*                    |
 | Autenticación   | JWT (access + refresh rotativo) + bcrypt          |
-| Pagos           | PixelPay (sandbox primero) *(fase 2)*             |
+| Pagos           | Contra entrega. Tarjeta: interfaz lista, sin conectar |
 | Hosting         | Railway (API y web como servicios separados)      |
 
 ## Estructura
@@ -25,8 +25,8 @@ web (desktop-first) y app Android (React Native / Expo).
 ```
 /apps
   /api        Express + Prisma — la API que consumen web y mobile
-  /web        React + Vite (fase 2)
-  /mobile     React Native + Expo (fase 3)
+  /web        React + Vite — la tienda
+  /mobile     React Native + Expo (fase 3, pendiente)
 /packages
   /shared     Tipos, constantes y validaciones zod compartidas
 ```
@@ -58,9 +58,13 @@ npm run db:generate -w @gina/api
 npm run db:migrate      # aplica prisma/migrations
 npm run db:seed         # 5 categorías, 15 productos, 2 promos, 2 usuarios
 
-# 4. Levantar la API
+# 4. Levantar la API y la web (en dos terminales)
 npm run dev:api         # http://localhost:3000
+npm run dev:web         # http://localhost:5173
 ```
+
+La web hace proxy de `/api` a `localhost:3000` en desarrollo, así que no hay que
+configurar CORS ni `VITE_API_URL` para trabajar en local.
 
 Comprobación rápida: `curl http://localhost:3000/health`
 
@@ -255,7 +259,7 @@ Settings → General → Danger Zone → Change visibility.
       auth y catálogo, seed, CI.
 - [x] **Fase 2a** — Carrito persistente, órdenes con control de stock,
       direcciones, dashboard de admin y la interfaz de pagos.
-- [ ] **Fase 2b** — Frontend web: home, catálogo, ficha, carrito, checkout con
+- [x] **Fase 2b** — Frontend web: home, catálogo, ficha, carrito, checkout con
       marco blanco, login y panel `/admin`.
 - [ ] **Fase 3** — App Android con Expo (bottom tabs, scroll infinito) y build
       `.aab` con `eas build -p android`.

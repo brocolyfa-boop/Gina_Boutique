@@ -5,22 +5,25 @@
   "description": "Tienda en línea Gina Boutique (Honduras): API + Web + App Android",
   "workspaces": [
     "packages/*",
-    "apps/api"
+    "apps/api",
+    "apps/web"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm run build -w @gina/shared && npm run build -w @gina/api",
+    "build": "npm run build -w @gina/shared && npm run build -w @gina/api && npm run build -w @gina/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "dev:api": "npm run dev -w @gina/api",
     "db:migrate": "npm run db:migrate -w @gina/api",
     "db:seed": "npm run db:seed -w @gina/api",
-    "db:studio": "npm run db:studio -w @gina/api"
+    "db:studio": "npm run db:studio -w @gina/api",
+    "dev:web": "npm run dev -w @gina/web"
   },
   "devDependencies": {
     "eslint": "^9.39.5",
+    "playwright": "^1.62.1",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.66.0"
   }

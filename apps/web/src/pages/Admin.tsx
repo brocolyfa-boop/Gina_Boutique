@@ -1,0 +1,274 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { EstadoOrden, OrdenDTO, Paginado, ProductoDTO } from '@gina/shared';
+import { ESTADOS_ORDEN, formatLps } from '@gina/shared';
+import { api } from '../lib/api';
+import { useAuth } from '../store/auth';
+import { Skeleton, Vacio } from '../components/ui';
+
+interface Resumen {
+  hoy: { ordenes: number; ventasLps: number };
+  semana: { ordenes: number; ventasLps: number };
+  ordenesPendientes: number;
+  masVendidos: Array<{ productoId: string; nombre: string; unidades: number }>;
+}
+
+function Dashboard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'resumen'],
+    queryFn: () => api<Resumen>('/ordenes/admin/resumen'),
+  });
+
+  if (isLoading) return <Skeleton className="h-40 w-full" />;
+  if (!data) return null;
+
+  const tarjetas = [
+    { titulo: 'Ventas de hoy', valor: formatLps(data.hoy.ventasLps), pie: `${data.hoy.ordenes} pedidos` },
+    {
+      titulo: 'Últimos 7 días',
+      valor: formatLps(data.semana.ventasLps),
+      pie: `${data.semana.ordenes} pedidos`,
+    },
+    { titulo: 'Por atender', valor: String(data.ordenesPendientes), pie: 'pedidos pendientes' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div className="grid gap-4 sm:grid-cols-3">
+        {tarjetas.map((t) => (
+          <div key={t.titulo} className="tarjeta p-6">
+            <p className="etiqueta">{t.titulo}</p>
+            <p className="mt-3 font-display text-3xl">{t.valor}</p>
+            <p className="mt-1 text-xs text-suave">{t.pie}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="tarjeta p-6">
+        <h2 className="text-lg">Más vendidos</h2>
+        {data.masVendidos.length === 0 ? (
+          <p className="mt-3 text-sm text-suave">Todavía no hay ventas registradas.</p>
+        ) : (
+          <ol className="mt-4 divide-y divide-borde">
+            {data.masVendidos.map((p, i) => (
+              <li key={p.productoId} className="flex items-center justify-between gap-4 py-3 text-sm">
+                <span>
+                  <span className="mr-3 text-suave">{i + 1}</span>
+                  {p.nombre}
+                </span>
+                <span className="whitespace-nowrap text-suave">{p.unidades} u.</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Pedidos() {
+  const qc = useQueryClient();
+  const [filtro, setFiltro] = useState<EstadoOrden | ''>('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'ordenes', filtro],
+    queryFn: () => api<OrdenDTO[]>(`/ordenes/admin/todas${filtro ? `?estado=${filtro}` : ''}`),
+  });
+
+  const cambiar = useMutation({
+    mutationFn: ({ id, estado }: { id: string; estado: EstadoOrden }) =>
+      api<OrdenDTO>(`/ordenes/${id}/estado`, { method: 'PATCH', body: { estado } }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin'] });
+    },
+  });
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2">
+        {['', ...ESTADOS_ORDEN].map((e) => (
+          <button
+            key={e || 'todos'}
+            onClick={() => setFiltro(e as EstadoOrden | '')}
+            className={`border px-3 py-1 text-xs uppercase tracking-etiqueta transition ${
+              filtro === e ? 'border-tinta bg-tinta text-white' : 'border-borde hover:border-tinta'
+            }`}
+          >
+            {e || 'Todos'}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="mt-6 h-40 w-full" />
+      ) : !data || data.length === 0 ? (
+        <p className="mt-8 text-sm text-suave">No hay pedidos con ese estado.</p>
+      ) : (
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full min-w-[48rem] text-sm">
+            <thead>
+              <tr className="border-b border-borde text-left">
+                <th className="py-3 font-normal text-suave">Pedido</th>
+                <th className="py-3 font-normal text-suave">Fecha</th>
+                <th className="py-3 font-normal text-suave">Envío a</th>
+                <th className="py-3 font-normal text-suave">Total</th>
+                <th className="py-3 font-normal text-suave">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-borde">
+              {data.map((o) => (
+                <tr key={o.id}>
+                  <td className="py-3">
+                    <span className="font-medium">{o.numero}</span>
+                    <span className="block text-xs text-suave">
+                      {o.items.length} {o.items.length === 1 ? 'artículo' : 'artículos'} ·{' '}
+                      {o.telefonoContacto}
+                    </span>
+                  </td>
+                  <td className="py-3 text-suave">
+                    {new Date(o.createdAt).toLocaleDateString('es-HN')}
+                  </td>
+                  <td className="py-3 text-suave">
+                    {o.municipio}, {o.departamento}
+                  </td>
+                  <td className="py-3">{formatLps(o.total)}</td>
+                  <td className="py-3">
+                    <select
+                      value={o.estado}
+                      onChange={(e) =>
+                        cambiar.mutate({ id: o.id, estado: e.target.value as EstadoOrden })
+                      }
+                      className="campo w-auto py-1 text-xs"
+                    >
+                      {ESTADOS_ORDEN.map((e) => (
+                        <option key={e} value={e}>
+                          {e}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Productos() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'productos'],
+    queryFn: () => api<Paginado<ProductoDTO>>('/productos/admin/todos?limit=60'),
+  });
+
+  const alternar = useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) =>
+      api<ProductoDTO>(`/productos/${id}`, { method: 'PATCH', body: { activo } }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin', 'productos'] }),
+  });
+
+  if (isLoading) return <Skeleton className="h-40 w-full" />;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[42rem] text-sm">
+        <thead>
+          <tr className="border-b border-borde text-left">
+            <th className="py-3 font-normal text-suave">Producto</th>
+            <th className="py-3 font-normal text-suave">Categoría</th>
+            <th className="py-3 font-normal text-suave">Precio</th>
+            <th className="py-3 font-normal text-suave">Stock</th>
+            <th className="py-3 font-normal text-suave">Estado</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-borde">
+          {data?.data.map((p) => (
+            <tr key={p.id}>
+              <td className="flex items-center gap-3 py-3">
+                {p.imagenes[0] && (
+                  <img src={p.imagenes[0]} alt="" loading="lazy" className="h-14 w-11 object-cover" />
+                )}
+                <Link to={`/producto/${p.id}`} className="hover:underline">
+                  {p.nombre}
+                </Link>
+              </td>
+              <td className="py-3 text-suave">{p.categoria.nombre}</td>
+              <td className="py-3">
+                {formatLps(p.precioFinal)}
+                {p.precioOferta != null && (
+                  <span className="block text-xs text-suave line-through">{formatLps(p.precio)}</span>
+                )}
+              </td>
+              <td className={`py-3 ${p.stock === 0 ? 'text-acento' : ''}`}>{p.stock}</td>
+              <td className="py-3">
+                <button
+                  onClick={() => alternar.mutate({ id: p.id, activo: !p.activo })}
+                  className="text-xs uppercase tracking-etiqueta hover:underline"
+                >
+                  {p.activo ? 'Activo' : 'Oculto'}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const PESTANAS = [
+  { clave: 'dashboard', texto: 'Resumen' },
+  { clave: 'pedidos', texto: 'Pedidos' },
+  { clave: 'productos', texto: 'Productos' },
+] as const;
+
+export default function Admin() {
+  const { esAdmin, cargando } = useAuth();
+  const [pestana, setPestana] = useState<(typeof PESTANAS)[number]['clave']>('dashboard');
+
+  if (cargando) return <Skeleton className="mx-auto mt-16 h-40 max-w-3xl" />;
+
+  if (!esAdmin) {
+    return (
+      <Vacio
+        titulo="Área restringida"
+        texto="Esta sección es solo para el equipo de la tienda."
+        accion={
+          <Link to="/" className="btn-principal">
+            Volver al inicio
+          </Link>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10 lg:px-8">
+      <h1 className="text-3xl">Administración</h1>
+
+      <nav className="mt-6 flex gap-6 border-b border-borde">
+        {PESTANAS.map((p) => (
+          <button
+            key={p.clave}
+            onClick={() => setPestana(p.clave)}
+            className={`-mb-px border-b-2 pb-3 text-xs uppercase tracking-etiqueta transition ${
+              pestana === p.clave ? 'border-tinta text-tinta' : 'border-transparent text-suave'
+            }`}
+          >
+            {p.texto}
+          </button>
+        ))}
+      </nav>
+
+      <div className="mt-8">
+        {pestana === 'dashboard' && <Dashboard />}
+        {pestana === 'pedidos' && <Pedidos />}
+        {pestana === 'productos' && <Productos />}
+      </div>
+    </div>
+  );
+}

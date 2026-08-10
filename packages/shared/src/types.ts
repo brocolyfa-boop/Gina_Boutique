@@ -63,6 +63,12 @@ export interface PromocionDTO {
 }
 
 export interface CartItemDTO {
+  /**
+   * Id de la línea en la base. Es null en el carrito de invitado, que vive en
+   * localStorage/AsyncStorage y no tiene filas. Los clientes lo usan para editar
+   * o quitar la línea sin depender de su posición en la lista.
+   */
+  id: string | null;
   productoId: string;
   cantidad: number;
   talla: string | null;

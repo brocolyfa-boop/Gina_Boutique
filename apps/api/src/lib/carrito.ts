@@ -58,7 +58,13 @@ export async function productoOFalla(productoId: string): Promise<Product> {
   return producto;
 }
 
-type LineaConProducto = { cantidad: number; talla: string | null; color: string | null; producto: Product };
+type LineaConProducto = {
+  id?: string;
+  cantidad: number;
+  talla: string | null;
+  color: string | null;
+  producto: Product;
+};
 
 /**
  * Arma el carrito que ven los clientes. Los precios y el costo de envío se
@@ -69,6 +75,7 @@ export function armarCartDTO(lineas: LineaConProducto[]): CartDTO {
     const precio = num(l.producto.precio);
     const final = precioFinal(precio, numOrNull(l.producto.precioOferta));
     return {
+      id: l.id ?? null,
       productoId: l.producto.id,
       cantidad: l.cantidad,
       talla: l.talla,

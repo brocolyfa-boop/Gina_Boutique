@@ -15,7 +15,14 @@ const envSchema = z.object({
   CLOUDINARY_URL: z.string().default(''),
   PORT: z.coerce.number().int().positive().default(3000),
   COSTO_ENVIO_LPS: z.coerce.number().nonnegative().default(65),
-  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:8081'),
+  // Se incluyen las variantes con 127.0.0.1: el navegador manda cabecera
+  // Origin en los POST aunque sean del mismo origen, y localhost y 127.0.0.1
+  // son orígenes distintos para esa comprobación.
+  CORS_ORIGINS: z
+    .string()
+    .default(
+      'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8081,http://127.0.0.1:8081',
+    ),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DIAS: z.coerce.number().int().positive().default(30),
 });
