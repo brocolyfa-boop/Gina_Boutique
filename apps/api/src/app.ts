@@ -5,9 +5,12 @@ import compression from 'compression';
 import morgan from 'morgan';
 import { env } from './env.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
+import addressRoutes from './routes/addresses.js';
 import authRoutes from './routes/auth.js';
+import cartRoutes from './routes/cart.js';
 import categoryRoutes from './routes/categories.js';
 import configRoutes from './routes/config.js';
+import orderRoutes from './routes/orders.js';
 import productRoutes from './routes/products.js';
 import promotionRoutes from './routes/promotions.js';
 
@@ -39,6 +42,9 @@ export function crearApp() {
   app.use('/api/categorias', categoryRoutes);
   app.use('/api/productos', productRoutes);
   app.use('/api/promociones', promotionRoutes);
+  app.use('/api/carrito', cartRoutes);
+  app.use('/api/ordenes', orderRoutes);
+  app.use('/api/direcciones', addressRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

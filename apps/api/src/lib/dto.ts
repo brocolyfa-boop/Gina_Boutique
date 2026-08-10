@@ -1,6 +1,13 @@
-import type { Category, Product, Promotion, User } from '@prisma/client';
-import type { CategoriaDTO, ProductoDTO, PromocionDTO, UserDTO } from '@gina/shared';
-import { descuentoPorcentaje, precioFinal } from '@gina/shared';
+import type { Category, Order, Product, Promotion, User } from '@prisma/client';
+import type {
+  CategoriaDTO,
+  OrdenDTO,
+  OrdenItemDTO,
+  ProductoDTO,
+  PromocionDTO,
+  UserDTO,
+} from '@gina/shared';
+import { descuentoPorcentaje, entregaEstimada, precioFinal } from '@gina/shared';
 import type { Prisma } from '@prisma/client';
 
 /** Prisma devuelve Decimal; los clientes esperan number. */
@@ -54,6 +61,34 @@ export function toProductoDTO(p: Product & { categoria: Category }): ProductoDTO
     destacado: p.destacado,
     activo: p.activo,
     createdAt: p.createdAt.toISOString(),
+  };
+}
+
+/** GB-000123. El correlativo lo asigna la secuencia de Postgres. */
+export const numeroDeOrden = (secuencia: number): string =>
+  `GB-${String(secuencia).padStart(6, '0')}`;
+
+export function toOrdenDTO(o: Order): OrdenDTO {
+  // `items` es Json en la base: se guardó ya con la forma de OrdenItemDTO.
+  const items = o.items as unknown as OrdenItemDTO[];
+  const { diasMin, diasMax } = entregaEstimada(o.departamento);
+  return {
+    id: o.id,
+    numero: numeroDeOrden(o.secuencia),
+    items,
+    subtotal: num(o.subtotal),
+    costoEnvio: num(o.costoEnvio),
+    total: num(o.total),
+    estado: o.estado,
+    metodoPago: o.metodoPago,
+    direccionEnvio: o.direccionEnvio,
+    departamento: o.departamento,
+    municipio: o.municipio,
+    referencia: o.referencia,
+    telefonoContacto: o.telefonoContacto,
+    entregaEstimadaDias: { min: diasMin, max: diasMax },
+    pixelpayTransactionId: o.pixelpayTransactionId,
+    createdAt: o.createdAt.toISOString(),
   };
 }
 

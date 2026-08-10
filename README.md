@@ -153,6 +153,64 @@ scroll infinito sobre el mismo endpoint.
 curl "http://localhost:3000/api/productos?categoria=mujer&talla=M&enOferta=true&limit=12"
 ```
 
+### Carrito
+
+| Método | Ruta                       | Descripción                                    |
+| ------ | -------------------------- | ---------------------------------------------- |
+| GET    | `/carrito`                 | Carrito con subtotal, envío y total            |
+| POST   | `/carrito/items`           | Agregar (suma si la línea ya existe)           |
+| PATCH  | `/carrito/items/:itemId`   | Cambiar cantidad (`0` elimina la línea)        |
+| DELETE | `/carrito/items/:itemId`   | Quitar una línea                               |
+| DELETE | `/carrito`                 | Vaciar                                         |
+| POST   | `/carrito/sincronizar`     | Fusionar el carrito de invitado al entrar      |
+
+Requieren sesión. El invitado guarda su carrito en `localStorage`/`AsyncStorage`
+y lo sube con `/sincronizar` al iniciar sesión; las líneas que ya existían se
+quedan con la cantidad **mayor**, no con la suma (2 en el teléfono y 2 en la web
+significa que quiere 2, no 4), y las inválidas se descartan devolviendo la lista
+en `descartadas` en vez de fallar toda la operación.
+
+Al agregar se valida contra el producto real: que exista, esté activo, tenga
+stock, y que la talla y el color pedidos sean de los que ese producto ofrece.
+
+### Órdenes y direcciones
+
+| Método | Ruta                       | Descripción                                    |
+| ------ | -------------------------- | ---------------------------------------------- |
+| POST   | `/ordenes`                 | Crear orden (valida stock, cobra, vacía carrito) |
+| GET    | `/ordenes`                 | Historial del cliente                          |
+| GET    | `/ordenes/:id`             | Detalle (solo la propia, o cualquiera si admin)  |
+| POST   | `/ordenes/:id/cancelar`    | Cancelar y devolver stock (solo si `pendiente`) |
+| GET    | `/direcciones`             | Direcciones guardadas                          |
+| POST   | `/direcciones`             | Guardar (la primera queda como principal)      |
+| PATCH  | `/direcciones/:id`         | Editar                                         |
+| DELETE | `/direcciones/:id`         | Borrar                                         |
+
+Lo que **no** se le cree al cliente al crear una orden: los precios se releen de
+la base, el costo de envío sale de `COSTO_ENVIO_LPS`, y el total se recalcula. El
+número de orden (`GB-000123`) lo asigna una secuencia de Postgres, no un conteo
+de filas — contar órdenes para numerar la siguiente se rompe con dos compras
+simultáneas.
+
+El stock se descuenta con un `UPDATE` condicionado a `stock >= cantidad`: si dos
+clientes compran la última unidad al mismo tiempo, uno recibe su orden y el otro
+un mensaje claro, y el stock nunca queda negativo. Los `items` de la orden se
+guardan como snapshot inmutable: cambiar el precio de un producto mañana no
+altera las órdenes de ayer.
+
+### Métodos de pago
+
+`GET /api/config` devuelve solo los métodos **realmente cobrables**. Hoy eso es
+`contra_entrega`; el pago con tarjeta aparecerá en la lista automáticamente en
+cuanto haya credenciales configuradas.
+
+No hay ninguna pasarela cableada, a propósito. `apps/api/src/lib/pagos.ts`
+define la interfaz `ProveedorPago`; para habilitar tarjeta se implementa esa
+interfaz y se registra en `PROVEEDORES`. Nada del carrito, las órdenes ni el
+checkout necesita cambiar. Si se pide una orden con un método no disponible, la
+API la rechaza antes de tocar el stock, en vez de aceptar una compra que nunca se
+podría cobrar.
+
 ### Administración
 
 Requieren `Authorization: Bearer <accessToken>` de un usuario con rol `admin`:
@@ -160,6 +218,11 @@ Requieren `Authorization: Bearer <accessToken>` de un usuario con rol `admin`:
 `GET /productos/admin/todos` y `GET /promociones/admin/todas` (que sí incluyen los
 inactivos). Borrar un producto es baja lógica (`activo = false`) para que las
 órdenes ya emitidas sigan apuntando a algo válido.
+
+Para pedidos: `GET /ordenes/admin/todas` (filtrable con `?estado=`),
+`PATCH /ordenes/:id/estado` y `GET /ordenes/admin/resumen`, que devuelve ventas
+del día y de la semana, pedidos pendientes y los 10 productos más vendidos. Las
+órdenes canceladas no cuentan como venta.
 
 ## Despliegue en Railway
 
@@ -190,8 +253,10 @@ Settings → General → Danger Zone → Change visibility.
 
 - [x] **Fase 1** — Monorepo, `@gina/shared`, Prisma schema + migración, API de
       auth y catálogo, seed, CI.
-- [ ] **Fase 2** — Carrito y órdenes, integración PixelPay, frontend web (home,
-      catálogo, ficha, carrito, checkout con marco blanco, login) y panel `/admin`.
+- [x] **Fase 2a** — Carrito persistente, órdenes con control de stock,
+      direcciones, dashboard de admin y la interfaz de pagos.
+- [ ] **Fase 2b** — Frontend web: home, catálogo, ficha, carrito, checkout con
+      marco blanco, login y panel `/admin`.
 - [ ] **Fase 3** — App Android con Expo (bottom tabs, scroll infinito) y build
       `.aab` con `eas build -p android`.
 

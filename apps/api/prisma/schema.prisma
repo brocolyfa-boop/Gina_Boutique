@@ -158,16 +158,22 @@ model CartItem {
   cart     Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   producto Product @relation(fields: [productoId], references: [id], onDelete: Cascade)
 
+  /// Ojo: Postgres considera dos NULL como distintos, así que esta restricción
+  /// NO impide duplicados cuando talla o color van vacíos (accesorios, bolsos).
+  /// Por eso la deduplicación real se hace en código antes de insertar.
   @@unique([cartId, productoId, talla, color])
   @@index([cartId])
   @@map("cart_items")
 }
 
 model Order {
-  id     String @id @default(cuid())
-  /// Número corto legible para el cliente, ej. GB-000123
-  numero String @unique
-  userId String @map("user_id")
+  id String @id @default(cuid())
+  /// Correlativo que Postgres asigna solo; el número legible que ve el cliente
+  /// (GB-000123) se arma a partir de aquí. Se delega a una secuencia de la base
+  /// porque contar órdenes para numerar la siguiente se rompe con dos compras
+  /// simultáneas.
+  secuencia Int    @unique @default(autoincrement())
+  userId    String @map("user_id")
 
   /// Snapshot inmutable de lo comprado (nombre y precio del momento de la compra).
   items Json

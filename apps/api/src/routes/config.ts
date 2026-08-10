@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import {
   DEPARTAMENTOS_HONDURAS,
-  METODOS_PAGO,
   MONEDA,
   TALLAS_CALZADO,
   TALLAS_ROPA,
   type ConfigPublicaDTO,
 } from '@gina/shared';
 import { env } from '../env.js';
+import { metodosDisponibles } from '../lib/pagos.js';
 
 const router = Router();
 
@@ -17,11 +17,22 @@ const router = Router();
  * la app de Android ni tocar el bundle de la web.
  */
 router.get('/', (_req, res) => {
-  const config: ConfigPublicaDTO = {
+  const disponibles = metodosDisponibles();
+  const config: ConfigPublicaDTO & {
+    metodosPagoDetalle: Array<{ metodo: string; etiqueta: string; descripcion: string }>;
+  } = {
     costoEnvioLps: env.COSTO_ENVIO_LPS,
     moneda: MONEDA,
     pixelpayMode: env.PIXELPAY_MODE,
-    metodosPago: [...METODOS_PAGO],
+    // Solo los métodos realmente cobrables. Mientras no haya pasarela de
+    // tarjeta configurada, el checkout no la ofrece en vez de aceptar una orden
+    // que nunca se podría cobrar.
+    metodosPago: disponibles.map((p) => p.metodo),
+    metodosPagoDetalle: disponibles.map((p) => ({
+      metodo: p.metodo,
+      etiqueta: p.etiqueta,
+      descripcion: p.descripcion,
+    })),
   };
   res.json(config);
 });
