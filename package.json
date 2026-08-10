@@ -9,7 +9,7 @@
     "apps/web"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22 <23"
   },
   "scripts": {
     "build": "npm run build -w @gina/shared && npm run build -w @gina/api && npm run build -w @gina/web",
