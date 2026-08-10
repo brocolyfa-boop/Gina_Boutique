@@ -3,7 +3,11 @@
   "build": {
     "builder": "RAILPACK",
     "buildCommand": "npm ci --include=dev && npm run build -w @gina/shared && npm run build -w @gina/api",
-    "watchPatterns": ["apps/api/**", "packages/shared/**", "package-lock.json"]
+    "watchPatterns": [
+      "apps/api/**",
+      "packages/shared/**",
+      "package-lock.json"
+    ]
   },
   "deploy": {
     "startCommand": "npm start -w @gina/api",
