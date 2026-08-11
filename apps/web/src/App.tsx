@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import { Skeleton } from './components/ui';
@@ -13,6 +13,8 @@ const Checkout = lazy(() => import('./pages/Checkout'));
 const Entrar = lazy(() => import('./pages/Entrar'));
 const MisPedidos = lazy(() => import('./pages/MisPedidos'));
 const Seguimiento = lazy(() => import('./pages/Seguimiento'));
+const Politicas = lazy(() => import('./pages/Politicas'));
+const NoEncontrada = lazy(() => import('./pages/NoEncontrada'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 const Cargando = () => (
@@ -68,6 +70,14 @@ export default function App() {
           }
         />
         <Route
+          path="politicas/:slug"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <Politicas />
+            </Suspense>
+          }
+        />
+        <Route
           path="seguimiento"
           element={
             <Suspense fallback={<Cargando />}>
@@ -83,7 +93,16 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 real: redirigir al inicio en silencio hace creer que el enlace
+            funcionó y que la tienda perdió el contenido. */}
+        <Route
+          path="*"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <NoEncontrada />
+            </Suspense>
+          }
+        />
       </Route>
 
       {/* El panel va fuera de <Layout>: tiene su propia cabecera y no muestra

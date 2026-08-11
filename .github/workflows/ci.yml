@@ -40,6 +40,12 @@ jobs:
       - name: Compilar paquete compartido
         run: npm run build -w @gina/shared
 
+      # Las reglas de dinero: precio de oferta, promociones y envío por zona.
+      # Van antes del lint porque un cobro mal calculado importa más que un
+      # espacio de más.
+      - name: Pruebas del paquete compartido
+        run: npm test -w @gina/shared
+
       - name: Lint
         run: npm run lint
 

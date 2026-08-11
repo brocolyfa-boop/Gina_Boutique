@@ -4,8 +4,11 @@ import { MARCA } from '@gina/shared';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { Aviso } from '../components/ui';
+import { useTitulo } from '../lib/titulo';
 
 export default function Entrar() {
+  useTitulo('Entrar o crear cuenta');
+
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { login, registro } = useAuth();

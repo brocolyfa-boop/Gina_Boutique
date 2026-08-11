@@ -90,6 +90,22 @@ export function entregaEstimada(departamento: string): { diasMin: number; diasMa
 }
 
 export const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
+
+/**
+ * Tabla de tallas de mujer, en centímetros y medidas de cuerpo (no de prenda).
+ *
+ * Vive aquí y no en la web porque la app de Android tiene que enseñar
+ * exactamente la misma; dos tablas distintas para la misma tienda es cómo se
+ * generan los cambios por talla que nadie quería.
+ */
+export const TABLA_TALLAS_MUJER = [
+  { talla: 'XS', busto: '78 – 82', cintura: '60 – 64', cadera: '86 – 90' },
+  { talla: 'S', busto: '83 – 87', cintura: '65 – 69', cadera: '91 – 95' },
+  { talla: 'M', busto: '88 – 93', cintura: '70 – 75', cadera: '96 – 101' },
+  { talla: 'L', busto: '94 – 99', cintura: '76 – 81', cadera: '102 – 107' },
+  { talla: 'XL', busto: '100 – 106', cintura: '82 – 88', cadera: '108 – 114' },
+  { talla: 'XXL', busto: '107 – 113', cintura: '89 – 95', cadera: '115 – 121' },
+] as const;
 export const TALLAS_CALZADO = ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44'] as const;
 
 export const ESTADOS_ORDEN = [

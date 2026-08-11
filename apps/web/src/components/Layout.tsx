@@ -198,7 +198,7 @@ export default function Layout() {
       <BotonWhatsApp />
 
       <footer className="mt-24 border-t border-borde bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5 lg:px-8">
           <div>
             <p className="font-display text-lg">{MARCA.nombre}</p>
             <p className="mt-2 text-sm text-suave">{MARCA.tagline}</p>
@@ -267,13 +267,36 @@ export default function Layout() {
             </p>
           </div>
           <div>
+            <p className="etiqueta">Ayuda</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>
+                <Link to="/politicas/cambios-y-devoluciones" className="text-suave hover:text-tinta">
+                  Cambios y devoluciones
+                </Link>
+              </li>
+              <li>
+                <Link to="/seguimiento" className="text-suave hover:text-tinta">
+                  Seguir mi pedido
+                </Link>
+              </li>
+              <li>
+                <Link to="/politicas/terminos" className="text-suave hover:text-tinta">
+                  Términos y condiciones
+                </Link>
+              </li>
+              <li>
+                <Link to="/politicas/privacidad" className="text-suave hover:text-tinta">
+                  Aviso de privacidad
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
             <p className="etiqueta">Pagos</p>
             <p className="mt-3 text-sm text-suave">
               Pago contra entrega disponible en todo el país. No necesitas cuenta para comprar.
             </p>
-            <Link to="/seguimiento" className="mt-3 inline-block text-sm underline">
-              Seguir mi pedido
-            </Link>
           </div>
         </div>
         <div className="border-t border-borde py-6 text-center text-xs text-suave">

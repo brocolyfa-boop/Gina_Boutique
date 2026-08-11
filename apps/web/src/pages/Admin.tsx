@@ -12,6 +12,7 @@ import AdminShell, { SECCIONES } from '../components/AdminShell';
 import AdminCategorias from '../components/AdminCategorias';
 import AdminPromociones from '../components/AdminPromociones';
 import AdminClientes from '../components/AdminClientes';
+import { useTitulo } from '../lib/titulo';
 
 function Pedidos() {
   const qc = useQueryClient();
@@ -260,6 +261,9 @@ function Productos() {
 export default function Admin() {
   const { esAdmin, cargando } = useAuth();
   const { seccion } = useParams();
+  useTitulo(
+    `Panel · ${SECCIONES.find((s) => s.clave === seccion)?.texto ?? 'Administración'}`,
+  );
 
   if (cargando) return <Skeleton className="mx-auto mt-16 h-40 max-w-3xl" />;
 

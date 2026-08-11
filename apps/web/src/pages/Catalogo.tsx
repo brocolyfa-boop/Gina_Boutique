@@ -4,6 +4,7 @@ import type { CategoriaDTO, Paginado, ProductoDTO } from '@gina/shared';
 import { TALLAS_CALZADO, TALLAS_ROPA, formatLps } from '@gina/shared';
 import { api } from '../lib/api';
 import { ProductoCard, SkeletonProductos, Vacio } from '../components/ui';
+import { useTitulo } from '../lib/titulo';
 
 const ORDENES = [
   { valor: 'nuevos', texto: 'Más recientes' },
@@ -24,6 +25,15 @@ export default function Catalogo() {
   });
 
   const categoriaActual = categorias?.find((c) => c.slug === params.get('categoria'));
+
+  const busqueda = params.get('q');
+  useTitulo(
+    busqueda
+      ? `Búsqueda: ${busqueda}`
+      : params.get('enOferta')
+        ? 'Ofertas'
+        : (categoriaActual?.nombre ?? 'Catálogo'),
+  );
 
   const cambiar = (clave: string, valor: string | null) => {
     const siguiente = new URLSearchParams(params);

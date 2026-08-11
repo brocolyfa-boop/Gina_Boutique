@@ -59,9 +59,12 @@ npm run db:generate -w @gina/api
 
 # 3. Migrar y sembrar datos de prueba
 npm run db:migrate      # aplica prisma/migrations
-npm run db:seed         # 5 categorías, 15 productos, 2 promos, 2 usuarios
+npm run db:seed         # 5 categorías, 15 productos de ejemplo, 2 usuarios
 
-# 4. Levantar la API y la web (en dos terminales)
+# 4. (Opcional) Cargar el catálogo real y desactivar el de ejemplo
+npm run db:catalogo -w @gina/api
+
+# 5. Levantar la API y la web (en dos terminales)
 npm run dev:api         # http://localhost:3000
 npm run dev:web         # http://localhost:5173
 ```
@@ -78,8 +81,14 @@ Usuarios que crea el seed (**solo para desarrollo**, cambiar antes de producció
 | admin   | admin@ginaboutique.hn        | `Admin1234!`   |
 | cliente | cliente@ginaboutique.hn      | `Cliente1234!` |
 
+> Estas credenciales están publicadas en este archivo, así que **no sirven para
+> producción**. Cambia la contraseña del administrador desde el panel antes de
+> exponer la tienda.
+
 Otros comandos útiles: `npm run db:studio` (explorador de la base),
-`npm run lint`, `npm run typecheck`.
+`npm run lint`, `npm run typecheck`, y `npm test -w @gina/shared` para las
+pruebas de las reglas de dinero (precio de oferta, promociones y envío por
+zona), que también corren en CI.
 
 ## Variables de entorno
 
@@ -354,6 +363,17 @@ Settings → General → Danger Zone → Change visibility.
   1 MB en el body.
 - El costo de envío y los totales se recalculan **en el backend** al crear la
   orden; lo que manda el cliente no se toma como cierto.
+- El precio también: catálogo, carrito y cobro usan el mismo
+  `precioConPromociones`, así que lo que se muestra es lo que se cobra.
+- El seguimiento de pedidos de invitado pide número **y** teléfono, y responde
+  lo mismo si no coincide que si no existe: distinguirlos permitiría averiguar
+  qué números de pedido hay.
+
+### Cuidado con las promociones
+
+Desde que las promociones descuentan de verdad, **crear una afecta precios reales**.
+Las que siembra el seed nacen desactivadas justamente por eso. Antes de publicar
+la tienda, revisa en el panel que no quede ninguna activa sin querer.
 
 ## Roadmap
 

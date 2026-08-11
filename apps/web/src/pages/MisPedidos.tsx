@@ -5,6 +5,7 @@ import { formatLps } from '@gina/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { Skeleton, Vacio } from '../components/ui';
+import { useTitulo } from '../lib/titulo';
 
 const COLOR_ESTADO: Record<EstadoOrden, string> = {
   pendiente: 'bg-fondo text-suave',
@@ -15,6 +16,8 @@ const COLOR_ESTADO: Record<EstadoOrden, string> = {
 };
 
 export default function MisPedidos() {
+  useTitulo('Mis pedidos');
+
   const { user } = useAuth();
   const qc = useQueryClient();
 

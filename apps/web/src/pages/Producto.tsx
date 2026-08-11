@@ -6,6 +6,8 @@ import { formatLps } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { useCarrito } from '../store/carrito';
 import { Aviso, Imagen, ProductoCard, Skeleton, Vacio } from '../components/ui';
+import GuiaTallas from '../components/GuiaTallas';
+import { useTitulo } from '../lib/titulo';
 
 type Detalle = ProductoDTO & { relacionados: ProductoDTO[] };
 
@@ -21,11 +23,19 @@ export default function Producto() {
   const [error, setError] = useState<string | null>(null);
   const [agregado, setAgregado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [guiaAbierta, setGuiaAbierta] = useState(false);
 
   const { data: p, isLoading } = useQuery({
     queryKey: ['producto', id],
     queryFn: () => api<Detalle>(`/productos/${id}`),
   });
+
+  // Se llama siempre, aun sin datos: los hooks no pueden ir después de un
+  // return condicional.
+  useTitulo(
+    p ? p.nombre : null,
+    p ? `${p.nombre} — ${formatLps(p.precioFinal)}. ${p.descripcion || 'Envío a todo Honduras en 1 a 2 días.'}`.slice(0, 300) : undefined,
+  );
 
   if (isLoading) {
     return (
@@ -128,7 +138,16 @@ export default function Producto() {
 
           {p.tallas.length > 0 && (
             <div className="mt-8">
-              <p className="etiqueta">Talla</p>
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="etiqueta">Talla</p>
+                <button
+                  type="button"
+                  onClick={() => setGuiaAbierta(true)}
+                  className="text-xs text-suave underline hover:text-tinta"
+                >
+                  Guía de tallas
+                </button>
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {p.tallas.map((t) => (
                   <button
@@ -216,17 +235,38 @@ export default function Producto() {
           </div>
 
           <dl className="mt-10 space-y-2 border-t border-borde pt-6 text-sm text-suave">
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-4">
               <dt>Envío</dt>
-              <dd>1 a 2 días · según zona</dd>
+              <dd>1 a 2 días · L 90 en Tegucigalpa, L 120 al resto del país</dd>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-4">
               <dt>Pago</dt>
               <dd>Contra entrega</dd>
             </div>
+            <div className="flex justify-between gap-4">
+              <dt>Cambios</dt>
+              <dd>
+                <Link to="/politicas/cambios-y-devoluciones" className="underline hover:text-tinta">
+                  7 días para cambiar de talla
+                </Link>
+              </dd>
+            </div>
+            {p.sku && (
+              <div className="flex justify-between gap-4">
+                <dt>Código</dt>
+                <dd>{p.sku}</dd>
+              </div>
+            )}
           </dl>
         </div>
       </div>
+
+      <GuiaTallas
+        abierta={guiaAbierta}
+        onCerrar={() => setGuiaAbierta(false)}
+        medidas={p.medidas}
+        nombreProducto={p.nombre}
+      />
 
       {p.relacionados.length > 0 && (
         <section className="mt-24">

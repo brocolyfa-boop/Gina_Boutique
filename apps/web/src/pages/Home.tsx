@@ -5,6 +5,7 @@ import type { CategoriaDTO, Paginado, ProductoDTO, PromocionDTO } from '@gina/sh
 import { MARCA } from '@gina/shared';
 import { api } from '../lib/api';
 import { Imagen, ProductoCard, SkeletonProductos } from '../components/ui';
+import { useTitulo } from '../lib/titulo';
 
 /** Cuenta atrás hasta el fin de la promoción. */
 function Cuenta({ hasta }: { hasta: string }) {
@@ -108,6 +109,8 @@ function Promociones() {
 }
 
 export default function Home() {
+  useTitulo(null, 'Ropa, calzado y accesorios de mujer en Honduras. Envío a los 18 departamentos, entrega en 1 a 2 días y pago contra entrega.');
+
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
     queryFn: () => api<CategoriaDTO[]>('/categorias'),

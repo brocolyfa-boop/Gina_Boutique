@@ -45,8 +45,9 @@ export function precioFinal(
   precio: number,
   precioOferta?: number | null,
   vigencia?: VigenciaOferta,
+  ahora: Date = new Date(),
 ): number {
-  return ofertaVigente(precio, precioOferta, vigencia)
+  return ofertaVigente(precio, precioOferta, vigencia, ahora)
     ? redondear(precioOferta as number)
     : redondear(precio);
 }
@@ -55,8 +56,9 @@ export function descuentoPorcentaje(
   precio: number,
   precioOferta?: number | null,
   vigencia?: VigenciaOferta,
+  ahora: Date = new Date(),
 ): number | null {
-  if (!ofertaVigente(precio, precioOferta, vigencia)) return null;
+  if (!ofertaVigente(precio, precioOferta, vigencia, ahora)) return null;
   return Math.round(((precio - (precioOferta as number)) / precio) * 100);
 }
 
@@ -202,10 +204,15 @@ export function precioConPromociones(
   promociones: PromocionAplicable[],
   ahora: Date = new Date(),
 ): number {
-  const base = precioFinal(producto.precio, producto.precioOferta ?? null, {
-    inicio: producto.ofertaInicio ?? null,
-    fin: producto.ofertaFin ?? null,
-  });
+  // `ahora` se pasa también aquí: si no, las promociones se evaluarían en la
+  // fecha indicada y la oferta del producto en la hora real del servidor, y con
+  // una fecha de prueba las dos mitades del cálculo dirían cosas distintas.
+  const base = precioFinal(
+    producto.precio,
+    producto.precioOferta ?? null,
+    { inicio: producto.ofertaInicio ?? null, fin: producto.ofertaFin ?? null },
+    ahora,
+  );
 
   let mejor = base;
   for (const promo of promociones) {

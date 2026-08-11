@@ -15,12 +15,15 @@ import { api, ApiError } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { useCarrito } from '../store/carrito';
 import { Aviso, Vacio } from '../components/ui';
+import { useTitulo } from '../lib/titulo';
 
 type ConfigConDetalle = ConfigPublicaDTO & {
   metodosPagoDetalle: Array<{ metodo: MetodoPago; etiqueta: string; descripcion: string }>;
 };
 
 export default function Checkout() {
+  useTitulo('Finalizar compra');
+
   const navigate = useNavigate();
   const { user } = useAuth();
   const { carrito, refrescar, vaciar } = useCarrito();

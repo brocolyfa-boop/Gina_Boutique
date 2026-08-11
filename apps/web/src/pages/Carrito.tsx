@@ -2,8 +2,11 @@ import { Link } from 'react-router-dom';
 import { formatLps } from '@gina/shared';
 import { useCarrito } from '../store/carrito';
 import { Imagen, Vacio } from '../components/ui';
+import { useTitulo } from '../lib/titulo';
 
 export default function Carrito() {
+  useTitulo('Tu carrito');
+
   const { carrito, cambiarCantidad, quitar, vaciar } = useCarrito();
 
   if (carrito.items.length === 0) {

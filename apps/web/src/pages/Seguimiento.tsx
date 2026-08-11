@@ -4,6 +4,7 @@ import type { OrdenDTO } from '@gina/shared';
 import { formatLps } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { Aviso } from '../components/ui';
+import { useTitulo } from '../lib/titulo';
 
 /**
  * Consulta de un pedido sin cuenta: número más teléfono.
@@ -12,6 +13,8 @@ import { Aviso } from '../components/ui';
  * registró también tiene derecho a saber en qué va su pedido.
  */
 export default function Seguimiento() {
+  useTitulo('Seguir mi pedido');
+
   const [params] = useSearchParams();
   const [numero, setNumero] = useState(params.get('numero') ?? '');
   const [telefono, setTelefono] = useState('');
