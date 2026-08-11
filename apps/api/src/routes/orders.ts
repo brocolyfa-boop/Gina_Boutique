@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import type { Prisma } from '@prisma/client';
+import { z } from 'zod';
 import {
+  PERIODOS_DASHBOARD,
   actualizarEstadoOrdenSchema,
   costoEnvioPara,
   crearOrdenSchema,
@@ -15,7 +17,8 @@ import { num, numOrNull, toOrdenDTO } from '../lib/dto.js';
 import { normalizar, validarLinea } from '../lib/carrito.js';
 import { proveedorDe } from '../lib/pagos.js';
 import { requiereAdmin, requiereAuth } from '../middleware/auth.js';
-import { asyncHandler, validarBody } from '../middleware/validate.js';
+import { asyncHandler, queryValidado, validarBody, validarQuery } from '../middleware/validate.js';
+import { construirDashboard } from '../lib/dashboard.js';
 
 const router = Router();
 
@@ -215,7 +218,26 @@ router.patch(
   }),
 );
 
-/** Dashboard: ventas del día y de la semana, y los más vendidos. */
+const dashboardQuerySchema = z.object({
+  periodo: z.enum(PERIODOS_DASHBOARD).default('30d'),
+  departamento: z.string().trim().min(1).optional(),
+});
+
+/**
+ * Panel del supervisor: ventas por zona, evolución diaria, más vendidos y stock
+ * bajo. Todo se agrega en la base, no en el navegador.
+ */
+router.get(
+  '/admin/dashboard',
+  requiereAdmin,
+  validarQuery(dashboardQuerySchema),
+  asyncHandler(async (_req, res) => {
+    const q = queryValidado<z.infer<typeof dashboardQuerySchema>>(res);
+    res.json(await construirDashboard(q.periodo, q.departamento));
+  }),
+);
+
+/** Resumen corto. Se mantiene por compatibilidad con la vista simple. */
 router.get(
   '/admin/resumen',
   requiereAdmin,

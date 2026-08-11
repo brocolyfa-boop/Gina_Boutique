@@ -172,3 +172,58 @@ export interface Paginado<T> {
 export interface ApiError {
   error: { message: string; code: string; detalles?: Record<string, string[]> };
 }
+
+/* -------------------------- panel de administración ------------------------ */
+
+export interface ResumenVentas {
+  ventas: number;
+  pedidos: number;
+  ticketPromedio: number;
+  unidades: number;
+}
+
+export interface VentaPorZona {
+  departamento: string;
+  municipio?: string;
+  pedidos: number;
+  ventas: number;
+  /** Porcentaje sobre el total del periodo, para pintar las barras. */
+  porcentaje: number;
+}
+
+export interface PuntoSerie {
+  /** Día en formato YYYY-MM-DD, en hora de Honduras. */
+  fecha: string;
+  ventas: number;
+  pedidos: number;
+}
+
+export interface ProductoVendido {
+  productoId: string;
+  nombre: string;
+  unidades: number;
+  ventas: number;
+}
+
+export interface ProductoStockBajo {
+  id: string;
+  nombre: string;
+  stock: number;
+  categoria: string;
+}
+
+export interface DashboardDTO {
+  rango: { desde: string; hasta: string; etiqueta: string };
+  resumen: ResumenVentas;
+  /** El mismo resumen del periodo anterior de igual duración, para comparar. */
+  resumenPrevio: ResumenVentas;
+  porDepartamento: VentaPorZona[];
+  porMunicipio: VentaPorZona[];
+  serie: PuntoSerie[];
+  masVendidos: ProductoVendido[];
+  stockBajo: ProductoStockBajo[];
+  pedidosPorEstado: Array<{ estado: string; pedidos: number }>;
+}
+
+export const PERIODOS_DASHBOARD = ['hoy', '7d', '30d', '90d'] as const;
+export type PeriodoDashboard = (typeof PERIODOS_DASHBOARD)[number];

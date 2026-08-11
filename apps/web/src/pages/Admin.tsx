@@ -7,66 +7,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { Skeleton, Vacio } from '../components/ui';
 import FormularioProducto from '../components/FormularioProducto';
-
-interface Resumen {
-  hoy: { ordenes: number; ventasLps: number };
-  semana: { ordenes: number; ventasLps: number };
-  ordenesPendientes: number;
-  masVendidos: Array<{ productoId: string; nombre: string; unidades: number }>;
-}
-
-function Dashboard() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'resumen'],
-    queryFn: () => api<Resumen>('/ordenes/admin/resumen'),
-  });
-
-  if (isLoading) return <Skeleton className="h-40 w-full" />;
-  if (!data) return null;
-
-  const tarjetas = [
-    { titulo: 'Ventas de hoy', valor: formatLps(data.hoy.ventasLps), pie: `${data.hoy.ordenes} pedidos` },
-    {
-      titulo: 'Últimos 7 días',
-      valor: formatLps(data.semana.ventasLps),
-      pie: `${data.semana.ordenes} pedidos`,
-    },
-    { titulo: 'Por atender', valor: String(data.ordenesPendientes), pie: 'pedidos pendientes' },
-  ];
-
-  return (
-    <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-3">
-        {tarjetas.map((t) => (
-          <div key={t.titulo} className="tarjeta p-6">
-            <p className="etiqueta">{t.titulo}</p>
-            <p className="mt-3 font-display text-3xl">{t.valor}</p>
-            <p className="mt-1 text-xs text-suave">{t.pie}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="tarjeta p-6">
-        <h2 className="text-lg">Más vendidos</h2>
-        {data.masVendidos.length === 0 ? (
-          <p className="mt-3 text-sm text-suave">Todavía no hay ventas registradas.</p>
-        ) : (
-          <ol className="mt-4 divide-y divide-borde">
-            {data.masVendidos.map((p, i) => (
-              <li key={p.productoId} className="flex items-center justify-between gap-4 py-3 text-sm">
-                <span>
-                  <span className="mr-3 text-suave">{i + 1}</span>
-                  {p.nombre}
-                </span>
-                <span className="whitespace-nowrap text-suave">{p.unidades} u.</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
-    </div>
-  );
-}
+import PanelVentas from '../components/PanelVentas';
 
 function Pedidos() {
   const qc = useQueryClient();
@@ -288,7 +229,7 @@ function Productos() {
 }
 
 const PESTANAS = [
-  { clave: 'dashboard', texto: 'Resumen' },
+  { clave: 'dashboard', texto: 'Ventas y zonas' },
   { clave: 'pedidos', texto: 'Pedidos' },
   { clave: 'productos', texto: 'Productos' },
 ] as const;
@@ -332,7 +273,7 @@ export default function Admin() {
       </nav>
 
       <div className="mt-8">
-        {pestana === 'dashboard' && <Dashboard />}
+        {pestana === 'dashboard' && <PanelVentas />}
         {pestana === 'pedidos' && <Pedidos />}
         {pestana === 'productos' && <Productos />}
       </div>
