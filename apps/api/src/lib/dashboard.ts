@@ -1,15 +1,18 @@
 import { Prisma } from '@prisma/client';
 import type {
+  ClienteTop,
   DashboardDTO,
   PeriodoDashboard,
   ProductoVendido,
   PuntoSerie,
+  ResumenCatalogo,
   ResumenVentas,
+  VentaPorCategoria,
   VentaPorZona,
 } from '@gina/shared';
-import { redondear, type OrdenItemDTO } from '@gina/shared';
+import { precioFinal, redondear, type OrdenItemDTO } from '@gina/shared';
 import { prisma } from '../prisma.js';
-import { num } from './dto.js';
+import { num, numOrNull } from './dto.js';
 
 /**
  * Honduras es UTC-6. Sin esto, una venta de las 7 de la noche del lunes (que en
@@ -51,6 +54,7 @@ const VENDIDAS: Prisma.OrderWhereInput = { estado: { not: 'cancelado' } };
 function agregarItems(ordenes: Array<{ items: Prisma.JsonValue }>): {
   unidades: number;
   masVendidos: ProductoVendido[];
+  todos: ProductoVendido[];
 } {
   const mapa = new Map<string, ProductoVendido>();
   let unidades = 0;
@@ -72,9 +76,121 @@ function agregarItems(ordenes: Array<{ items: Prisma.JsonValue }>): {
     }
   }
 
+  const todos = [...mapa.values()].sort((a, b) => b.unidades - a.unidades);
+  return { unidades, masVendidos: todos.slice(0, 10), todos };
+}
+
+/**
+ * Ventas por categoría. Se resuelve en dos pasos porque el snapshot de la orden
+ * guarda el producto, no su categoría: primero se agrupan las unidades por
+ * producto y luego se consulta a qué categoría pertenece cada uno.
+ *
+ * Un producto borrado del catálogo cae en "Otras": la venta ocurrió y tiene que
+ * seguir sumando aunque el producto ya no exista.
+ */
+async function categoriasDe(
+  ordenes: Array<{ items: Prisma.JsonValue }>,
+): Promise<VentaPorCategoria[]> {
+  const porProducto = agregarItems(ordenes).todos;
+  if (porProducto.length === 0) return [];
+
+  const productos = await prisma.product.findMany({
+    where: { id: { in: porProducto.map((p) => p.productoId) } },
+    select: { id: true, categoriaId: true, categoria: { select: { nombre: true } } },
+  });
+  const categoriaDe = new Map(productos.map((p) => [p.id, p]));
+
+  const mapa = new Map<string, VentaPorCategoria>();
+  for (const p of porProducto) {
+    const cat = categoriaDe.get(p.productoId);
+    const id = cat?.categoriaId ?? 'otras';
+    const actual = mapa.get(id) ?? {
+      categoriaId: id,
+      nombre: cat?.categoria.nombre ?? 'Otras',
+      unidades: 0,
+      ventas: 0,
+      porcentaje: 0,
+    };
+    actual.unidades += p.unidades;
+    actual.ventas = redondear(actual.ventas + p.ventas);
+    mapa.set(id, actual);
+  }
+
+  // El porcentaje se saca sobre la venta de artículos, no sobre el total de las
+  // órdenes: ese total incluye el envío, que no pertenece a ninguna categoría, y
+  // los porcentajes no sumarían 100.
+  const base = [...mapa.values()].reduce((t, c) => t + c.ventas, 0) || 1;
+  return [...mapa.values()]
+    .map((c) => ({ ...c, porcentaje: Math.round((c.ventas / base) * 100) }))
+    .sort((a, b) => b.ventas - a.ventas);
+}
+
+/** Clientes que más compraron en el periodo. */
+async function clientesDe(where: Prisma.OrderWhereInput): Promise<ClienteTop[]> {
+  const grupos = await prisma.order.groupBy({
+    by: ['userId'],
+    where,
+    _sum: { total: true },
+    _count: true,
+    orderBy: { _sum: { total: 'desc' } },
+    take: 8,
+  });
+  if (grupos.length === 0) return [];
+
+  const usuarios = await prisma.user.findMany({
+    where: { id: { in: grupos.map((g) => g.userId) } },
+    select: { id: true, nombre: true, email: true },
+  });
+  const porId = new Map(usuarios.map((u) => [u.id, u]));
+
+  return grupos.map((g) => ({
+    id: g.userId,
+    // Un usuario borrado deja sus órdenes atrás; no se pierde la venta.
+    nombre: porId.get(g.userId)?.nombre ?? 'Cuenta eliminada',
+    email: porId.get(g.userId)?.email ?? '',
+    pedidos: g._count,
+    ventas: redondear(num(g._sum.total)),
+  }));
+}
+
+/** Estado del catálogo hoy. No depende del periodo: es una foto del inventario. */
+async function catalogoAhora(): Promise<ResumenCatalogo> {
+  const [productos, activos, categorias, clientes, sinStock, agg] = await Promise.all([
+    prisma.product.count(),
+    prisma.product.count({ where: { activo: true } }),
+    prisma.category.count(),
+    prisma.user.count({ where: { rol: 'cliente' } }),
+    prisma.product.count({ where: { activo: true, stock: 0 } }),
+    prisma.product.aggregate({ where: { activo: true }, _sum: { stock: true } }),
+  ]);
+
+  // El valor del inventario necesita precio × stock por fila, que `aggregate`
+  // no sabe hacer; se traen las dos columnas y se multiplica aquí.
+  const filas = await prisma.product.findMany({
+    where: { activo: true },
+    select: { precio: true, precioOferta: true, stock: true, ofertaInicio: true, ofertaFin: true },
+  });
+  const valorInventario = redondear(
+    filas.reduce(
+      (t, f) =>
+        t +
+        precioFinal(num(f.precio), numOrNull(f.precioOferta), {
+          inicio: f.ofertaInicio,
+          fin: f.ofertaFin,
+        }) *
+          f.stock,
+      0,
+    ),
+  );
+
   return {
-    unidades,
-    masVendidos: [...mapa.values()].sort((a, b) => b.unidades - a.unidades).slice(0, 10),
+    productos,
+    productosActivos: activos,
+    categorias,
+    clientes,
+    unidadesEnStock: agg._sum.stock ?? 0,
+    valorInventario,
+    sinStock,
   };
 }
 
@@ -157,6 +273,12 @@ export async function construirDashboard(
       `,
     ]);
 
+  const [porCategoria, topClientes, catalogo] = await Promise.all([
+    categoriasDe(ordenes),
+    clientesDe(where),
+    catalogoAhora(),
+  ]);
+
   const totalVentas = resumen.ventas || 1;
   const aZona = (d: {
     departamento: string;
@@ -203,5 +325,8 @@ export async function construirDashboard(
       categoria: p.categoria.nombre,
     })),
     pedidosPorEstado: porEstado.map((e) => ({ estado: e.estado, pedidos: e._count })),
+    porCategoria,
+    topClientes,
+    catalogo,
   };
 }

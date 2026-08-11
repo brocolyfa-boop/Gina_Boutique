@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CategoriaDTO, EstadoOrden, OrdenDTO, Paginado, ProductoDTO } from '@gina/shared';
 import { ESTADOS_ORDEN, formatLps } from '@gina/shared';
@@ -8,6 +8,10 @@ import { useAuth } from '../store/auth';
 import { Skeleton, Vacio } from '../components/ui';
 import FormularioProducto from '../components/FormularioProducto';
 import PanelVentas from '../components/PanelVentas';
+import AdminShell, { SECCIONES } from '../components/AdminShell';
+import AdminCategorias from '../components/AdminCategorias';
+import AdminPromociones from '../components/AdminPromociones';
+import AdminClientes from '../components/AdminClientes';
 
 function Pedidos() {
   const qc = useQueryClient();
@@ -228,15 +232,9 @@ function Productos() {
   );
 }
 
-const PESTANAS = [
-  { clave: 'dashboard', texto: 'Ventas y zonas' },
-  { clave: 'pedidos', texto: 'Pedidos' },
-  { clave: 'productos', texto: 'Productos' },
-] as const;
-
 export default function Admin() {
   const { esAdmin, cargando } = useAuth();
-  const [pestana, setPestana] = useState<(typeof PESTANAS)[number]['clave']>('dashboard');
+  const { seccion } = useParams();
 
   if (cargando) return <Skeleton className="mx-auto mt-16 h-40 max-w-3xl" />;
 
@@ -254,29 +252,19 @@ export default function Admin() {
     );
   }
 
+  // La sección va en la dirección para que el supervisor pueda guardar el
+  // enlace de la pantalla que use a diario.
+  const valida = SECCIONES.some((s) => s.clave === seccion);
+  if (!valida) return <Navigate to="/admin/resumen" replace />;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 lg:px-8">
-      <h1 className="text-3xl">Administración</h1>
-
-      <nav className="mt-6 flex gap-6 border-b border-borde">
-        {PESTANAS.map((p) => (
-          <button
-            key={p.clave}
-            onClick={() => setPestana(p.clave)}
-            className={`-mb-px border-b-2 pb-3 text-xs uppercase tracking-etiqueta transition ${
-              pestana === p.clave ? 'border-tinta text-tinta' : 'border-transparent text-suave'
-            }`}
-          >
-            {p.texto}
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-8">
-        {pestana === 'dashboard' && <PanelVentas />}
-        {pestana === 'pedidos' && <Pedidos />}
-        {pestana === 'productos' && <Productos />}
-      </div>
-    </div>
+    <AdminShell>
+      {seccion === 'resumen' && <PanelVentas />}
+      {seccion === 'pedidos' && <Pedidos />}
+      {seccion === 'productos' && <Productos />}
+      {seccion === 'categorias' && <AdminCategorias />}
+      {seccion === 'promociones' && <AdminPromociones />}
+      {seccion === 'clientes' && <AdminClientes />}
+    </AdminShell>
   );
 }

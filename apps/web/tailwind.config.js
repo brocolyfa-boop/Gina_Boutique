@@ -15,6 +15,9 @@ export default {
         fondo: '#FAF9F8',
         superficie: '#FFFFFF',
         acento: '#B03052',
+        // Solo para indicadores del panel (subidas, medidor). No es color de marca.
+        verde: '#3F6C51',
+        ambar: '#D9A441',
       },
       fontFamily: {
         display: ['"Playfair Display"', '"Cormorant Garamond"', 'Georgia', 'serif'],

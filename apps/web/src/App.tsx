@@ -74,16 +74,19 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route
-          path="admin"
-          element={
-            <Suspense fallback={<Cargando />}>
-              <Admin />
-            </Suspense>
-          }
-        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+
+      {/* El panel va fuera de <Layout>: tiene su propia cabecera y no muestra
+          la tienda alrededor. Se sale de él con "Ver como cliente". */}
+      <Route
+        path="admin/:seccion?"
+        element={
+          <Suspense fallback={<Cargando />}>
+            <Admin />
+          </Suspense>
+        }
+      />
     </Routes>
   );
 }

@@ -154,8 +154,8 @@ export default function Layout() {
                   {user.nombre.split(' ')[0]}
                 </Link>
                 {esAdmin && (
-                  <Link to="/admin" className="hover:underline">
-                    Admin
+                  <Link to="/admin" className="border border-tinta px-3 py-1 hover:bg-tinta hover:text-white">
+                    Panel
                   </Link>
                 )}
                 <button

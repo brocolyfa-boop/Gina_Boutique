@@ -212,6 +212,33 @@ export interface ProductoStockBajo {
   categoria: string;
 }
 
+export interface VentaPorCategoria {
+  categoriaId: string;
+  nombre: string;
+  unidades: number;
+  ventas: number;
+  porcentaje: number;
+}
+
+export interface ClienteTop {
+  id: string;
+  nombre: string;
+  email: string;
+  pedidos: number;
+  ventas: number;
+}
+
+/** Fotografía del catálogo, sin filtro de fecha: es el estado de hoy. */
+export interface ResumenCatalogo {
+  productos: number;
+  productosActivos: number;
+  categorias: number;
+  clientes: number;
+  unidadesEnStock: number;
+  valorInventario: number;
+  sinStock: number;
+}
+
 export interface DashboardDTO {
   rango: { desde: string; hasta: string; etiqueta: string };
   resumen: ResumenVentas;
@@ -223,6 +250,9 @@ export interface DashboardDTO {
   masVendidos: ProductoVendido[];
   stockBajo: ProductoStockBajo[];
   pedidosPorEstado: Array<{ estado: string; pedidos: number }>;
+  porCategoria: VentaPorCategoria[];
+  topClientes: ClienteTop[];
+  catalogo: ResumenCatalogo;
 }
 
 export const PERIODOS_DASHBOARD = ['hoy', '7d', '30d', '90d'] as const;

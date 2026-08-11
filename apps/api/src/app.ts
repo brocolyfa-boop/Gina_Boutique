@@ -14,6 +14,7 @@ import orderRoutes from './routes/orders.js';
 import productRoutes from './routes/products.js';
 import promotionRoutes from './routes/promotions.js';
 import uploadRoutes from './routes/uploads.js';
+import userRoutes from './routes/users.js';
 
 export function crearApp() {
   const app = express();
@@ -51,6 +52,7 @@ export function crearApp() {
   app.use('/api/ordenes', orderRoutes);
   app.use('/api/direcciones', addressRoutes);
   app.use('/api/imagenes', uploadRoutes);
+  app.use('/api/usuarios', userRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

@@ -4,12 +4,13 @@ import type { DashboardDTO, PeriodoDashboard, PuntoSerie, VentaPorZona } from '@
 import { DEPARTAMENTOS, PERIODOS_DASHBOARD, formatLps } from '@gina/shared';
 import { api } from '../lib/api';
 import { Skeleton } from './ui';
+import { BarraApilada, Dona, Medidor, colorSerie } from './graficos';
 
 const ETIQUETA_PERIODO: Record<PeriodoDashboard, string> = {
   hoy: 'Hoy',
-  '7d': '7 días',
-  '30d': '30 días',
-  '90d': '90 días',
+  '7d': 'Últimos 7 días',
+  '30d': 'Últimos 30 días',
+  '90d': 'Últimos 90 días',
 };
 
 /* ------------------------------- utilidades ------------------------------- */
@@ -29,9 +30,12 @@ function diaCorto(fecha: string): string {
   return new Date(a, m - 1, d).toLocaleDateString('es-HN', { day: 'numeric', month: 'short' });
 }
 
+const entero = (n: number) => n.toLocaleString('es-HN');
+
 /* --------------------------------- piezas --------------------------------- */
 
-function Tarjeta({
+/** Celda del bloque de resumen: valor grande y su referencia debajo. */
+function Cifra({
   titulo,
   valor,
   pie,
@@ -40,21 +44,43 @@ function Tarjeta({
   titulo: string;
   valor: string;
   pie: string;
-  delta: number | null;
+  delta?: number | null;
 }) {
   return (
-    <div className="tarjeta min-w-0 p-5">
-      <p className="etiqueta">{titulo}</p>
-      <p className="mt-3 font-display text-2xl lg:text-3xl">{valor}</p>
-      <p className="mt-1 flex items-center gap-2 text-xs text-suave">
+    <div className="min-w-0 px-5 py-4">
+      <p className="etiqueta truncate">{titulo}</p>
+      <p className="mt-2 font-display text-2xl leading-none lg:text-[1.75rem]">{valor}</p>
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-suave">
         <span>{pie}</span>
-        {delta !== null && (
-          <span className={delta < 0 ? 'text-acento' : 'text-tinta'}>
+        {delta != null && (
+          <span className={delta < 0 ? 'text-acento' : 'text-verde'}>
             {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}%
           </span>
         )}
       </p>
     </div>
+  );
+}
+
+function Panel({
+  titulo,
+  nota,
+  children,
+  className = '',
+}: {
+  titulo: string;
+  nota?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`tarjeta min-w-0 p-6 ${className}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-lg">{titulo}</h2>
+        {nota && <span className="text-xs text-suave">{nota}</span>}
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
   );
 }
 
@@ -109,15 +135,17 @@ function SerieDiaria({ serie }: { serie: PuntoSerie[] }) {
 
 /** Barras horizontales por zona. En HTML, no SVG: se lee y se copia mejor. */
 function BarrasZona({ filas, vacio }: { filas: VentaPorZona[]; vacio: string }) {
-  if (filas.length === 0) return <p className="mt-4 text-sm text-suave">{vacio}</p>;
+  if (filas.length === 0) return <p className="text-sm text-suave">{vacio}</p>;
   const maximo = Math.max(...filas.map((f) => f.ventas), 1);
 
   return (
-    <ul className="mt-4 space-y-3">
+    <ul className="space-y-3">
       {filas.map((f) => (
-        <li key={`${f.departamento}-${f.municipio ?? ''}`}>
+        <li key={`${f.departamento}-${f.municipio ?? ''}`} className="min-w-0">
           <div className="flex min-w-0 items-baseline justify-between gap-4 text-sm">
-            <span className="min-w-0 truncate">{f.municipio ? `${f.municipio}, ${f.departamento}` : f.departamento}</span>
+            <span className="min-w-0 truncate">
+              {f.municipio ? `${f.municipio}, ${f.departamento}` : f.departamento}
+            </span>
             <span className="whitespace-nowrap text-suave">
               {formatLps(f.ventas)} · {f.porcentaje}%
             </span>
@@ -140,7 +168,7 @@ export default function PanelVentas() {
   const [periodo, setPeriodo] = useState<PeriodoDashboard>('30d');
   const [departamento, setDepartamento] = useState('');
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['admin', 'dashboard', periodo, departamento],
     queryFn: () =>
       api<DashboardDTO>(
@@ -153,33 +181,53 @@ export default function PanelVentas() {
   });
 
   const filtros = (
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="flex flex-wrap gap-2">
-        {PERIODOS_DASHBOARD.map((p) => (
-          <button
-            key={p}
-            onClick={() => setPeriodo(p)}
-            className={`border px-3 py-1 text-xs uppercase tracking-etiqueta transition ${
-              periodo === p ? 'border-tinta bg-tinta text-white' : 'border-borde hover:border-tinta'
-            }`}
-          >
-            {ETIQUETA_PERIODO[p]}
-          </button>
-        ))}
-      </div>
-      <select
-        value={departamento}
-        onChange={(e) => setDepartamento(e.target.value)}
-        aria-label="Filtrar por departamento"
-        className="campo w-auto py-1 text-xs"
+    <div className="tarjeta flex flex-wrap items-end gap-4 p-4">
+      <label className="min-w-0">
+        <span className="etiqueta">Periodo</span>
+        <select
+          value={periodo}
+          onChange={(e) => setPeriodo(e.target.value as PeriodoDashboard)}
+          className="campo mt-1 w-auto py-2 text-sm"
+        >
+          {PERIODOS_DASHBOARD.map((p) => (
+            <option key={p} value={p}>
+              {ETIQUETA_PERIODO[p]}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="min-w-0">
+        <span className="etiqueta">Departamento</span>
+        <select
+          value={departamento}
+          onChange={(e) => setDepartamento(e.target.value)}
+          className="campo mt-1 w-auto py-2 text-sm"
+        >
+          <option value="">Todos</option>
+          {DEPARTAMENTOS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <button
+        onClick={() => {
+          setPeriodo('30d');
+          setDepartamento('');
+        }}
+        className="btn-secundario px-4 py-2 text-xs"
       >
-        <option value="">Todos los departamentos</option>
-        {DEPARTAMENTOS.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </select>
+        Limpiar
+      </button>
+      <button
+        onClick={() => void refetch()}
+        className="ml-auto text-xs uppercase tracking-etiqueta text-suave hover:text-tinta"
+      >
+        {isFetching ? 'Actualizando…' : 'Actualizar'}
+      </button>
     </div>
   );
 
@@ -201,112 +249,173 @@ export default function PanelVentas() {
     );
   }
 
-  const { resumen: r, resumenPrevio: prev } = data;
+  const { resumen: r, resumenPrevio: prev, catalogo: cat } = data;
+
+  const pendientes = data.pedidosPorEstado.find((e) => e.estado === 'pendiente')?.pedidos ?? 0;
+  const totalPedidos = data.pedidosPorEstado.reduce((t, e) => t + e.pedidos, 0);
+  const atendidos = totalPedidos > 0 ? ((totalPedidos - pendientes) / totalPedidos) * 100 : 100;
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        {filtros}
-        <p className="text-xs text-suave">
-          {data.rango.etiqueta}
-          {departamento && ` · ${departamento}`} · comparado con el periodo anterior
+    <div className="space-y-6">
+      {filtros}
+
+      {/* Franja de resumen, al estilo del tablero de referencia: una fila de
+          cifras con su comparación, separadas por líneas finas. */}
+      <div className="tarjeta">
+        <p className="border-b border-borde px-5 py-3 text-sm">
+          Resumen · {data.rango.etiqueta}
+          {departamento && ` · ${departamento}`}
         </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tarjeta
-          titulo="Ventas"
-          valor={formatLps(r.ventas)}
-          pie={`antes ${formatLps(prev.ventas)}`}
-          delta={variacion(r.ventas, prev.ventas)}
-        />
-        <Tarjeta
-          titulo="Pedidos"
-          valor={String(r.pedidos)}
-          pie={`antes ${prev.pedidos}`}
-          delta={variacion(r.pedidos, prev.pedidos)}
-        />
-        <Tarjeta
-          titulo="Ticket promedio"
-          valor={formatLps(r.ticketPromedio)}
-          pie={`antes ${formatLps(prev.ticketPromedio)}`}
-          delta={variacion(r.ticketPromedio, prev.ticketPromedio)}
-        />
-        <Tarjeta
-          titulo="Unidades"
-          valor={String(r.unidades)}
-          pie={`antes ${prev.unidades}`}
-          delta={variacion(r.unidades, prev.unidades)}
-        />
-      </div>
-
-      <div className="tarjeta min-w-0 p-6">
-        <h2 className="text-lg">Ventas por día</h2>
-        <div className="mt-4">
-          <SerieDiaria serie={data.serie} />
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="tarjeta min-w-0 p-6">
-          <h2 className="text-lg">Por departamento</h2>
-          <BarrasZona
-            filas={data.porDepartamento}
-            vacio="Sin ventas por zona en este periodo."
+        <div className="grid divide-y divide-borde sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+          <Cifra
+            titulo="Ventas"
+            valor={formatLps(r.ventas)}
+            pie={`antes ${formatLps(prev.ventas)}`}
+            delta={variacion(r.ventas, prev.ventas)}
+          />
+          <Cifra
+            titulo="Pedidos"
+            valor={entero(r.pedidos)}
+            pie={`antes ${entero(prev.pedidos)}`}
+            delta={variacion(r.pedidos, prev.pedidos)}
+          />
+          <Cifra
+            titulo="Ticket promedio"
+            valor={formatLps(r.ticketPromedio)}
+            pie={`antes ${formatLps(prev.ticketPromedio)}`}
+            delta={variacion(r.ticketPromedio, prev.ticketPromedio)}
+          />
+          <Cifra
+            titulo="Unidades vendidas"
+            valor={entero(r.unidades)}
+            pie={`antes ${entero(prev.unidades)}`}
+            delta={variacion(r.unidades, prev.unidades)}
           />
         </div>
-        <div className="tarjeta min-w-0 p-6">
-          <h2 className="text-lg">Municipios con más ventas</h2>
-          <BarrasZona filas={data.porMunicipio} vacio="Sin ventas por municipio en este periodo." />
+        <div className="grid divide-y divide-borde border-t border-borde sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+          <Cifra
+            titulo="Productos"
+            valor={entero(cat.productosActivos)}
+            pie={`${entero(cat.productos)} en total · ${entero(cat.sinStock)} agotados`}
+          />
+          <Cifra titulo="Categorías" valor={entero(cat.categorias)} pie="en el catálogo" />
+          <Cifra titulo="Clientes" valor={entero(cat.clientes)} pie="cuentas registradas" />
+          <Cifra
+            titulo="Inventario"
+            valor={formatLps(cat.valorInventario)}
+            pie={`${entero(cat.unidadesEnStock)} unidades en bodega`}
+          />
         </div>
+      </div>
+
+      <Panel titulo="Ventas por día" nota={data.rango.etiqueta}>
+        <SerieDiaria serie={data.serie} />
+      </Panel>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Panel titulo="Ventas por departamento" className="lg:col-span-2">
+          <BarrasZona filas={data.porDepartamento} vacio="Sin ventas por zona en este periodo." />
+        </Panel>
+        <Panel titulo="Pedidos por estado" nota="incluye cancelados">
+          <Dona
+            titulo="Pedidos por estado"
+            total={totalPedidos}
+            datos={data.pedidosPorEstado.map((e) => ({
+              etiqueta: e.estado.replace(/_/g, ' '),
+              valor: e.pedidos,
+            }))}
+          />
+        </Panel>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="tarjeta min-w-0 p-6">
-          <h2 className="text-lg">Más vendidos</h2>
-          {data.masVendidos.length === 0 ? (
-            <p className="mt-4 text-sm text-suave">Todavía no hay ventas.</p>
+        <Panel titulo="Ventas por categoría" nota="sin contar el envío" className="lg:col-span-2">
+          <Dona
+            titulo="Ventas por categoría"
+            total={data.porCategoria.reduce((t, c) => t + c.ventas, 0)}
+            centro={`L ${Math.round(
+              data.porCategoria.reduce((t, c) => t + c.ventas, 0) / 1000,
+            )} K`}
+            formato={formatLps}
+            datos={data.porCategoria.map((c) => ({ etiqueta: c.nombre, valor: c.ventas }))}
+          />
+        </Panel>
+        <Panel titulo="Pedidos atendidos" nota="fuera de pendiente">
+          <Medidor
+            titulo="Pedidos atendidos"
+            porcentaje={atendidos}
+            etiqueta={`${entero(pendientes)} de ${entero(totalPedidos)} siguen pendientes`}
+          />
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel titulo="Municipios con más ventas">
+          <BarrasZona
+            filas={data.porMunicipio}
+            vacio="Sin ventas por municipio en este periodo."
+          />
+        </Panel>
+
+        <Panel titulo="Clientes que más compran">
+          {data.topClientes.length === 0 ? (
+            <p className="text-sm text-suave">Sin compras en este periodo.</p>
           ) : (
-            <ol className="mt-4 divide-y divide-borde">
+            <ul className="space-y-3">
+              {data.topClientes.map((c, i) => (
+                <BarraApilada
+                  key={c.id}
+                  nombre={c.nombre}
+                  pie={`${formatLps(c.ventas)} · ${c.pedidos} ped.`}
+                  partes={[
+                    { etiqueta: 'Compras', valor: c.ventas, color: colorSerie(i) },
+                    {
+                      etiqueta: 'resto',
+                      valor: Math.max(0, (data.topClientes[0]?.ventas ?? 0) - c.ventas),
+                      color: 'transparent',
+                    },
+                  ]}
+                />
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel titulo="Productos más vendidos">
+          {data.masVendidos.length === 0 ? (
+            <p className="text-sm text-suave">Todavía no hay ventas.</p>
+          ) : (
+            <ol className="divide-y divide-borde">
               {data.masVendidos.map((p, i) => (
-                <li key={p.productoId} className="flex min-w-0 items-baseline justify-between gap-3 py-2 text-sm">
+                <li
+                  key={p.productoId}
+                  className="flex min-w-0 items-baseline justify-between gap-3 py-2 text-sm"
+                >
                   <span className="min-w-0 truncate">
                     <span className="mr-2 text-suave">{i + 1}</span>
                     {p.nombre}
                   </span>
                   <span className="whitespace-nowrap text-suave">
-                    {p.unidades} u. · {formatLps(p.ventas)}
+                    {entero(p.unidades)} u. · {formatLps(p.ventas)}
                   </span>
                 </li>
               ))}
             </ol>
           )}
-        </div>
+        </Panel>
 
-        <div className="tarjeta min-w-0 p-6">
-          <h2 className="text-lg">Pedidos por estado</h2>
-          {data.pedidosPorEstado.length === 0 ? (
-            <p className="mt-4 text-sm text-suave">Sin pedidos en este periodo.</p>
-          ) : (
-            <ul className="mt-4 divide-y divide-borde">
-              {data.pedidosPorEstado.map((e) => (
-                <li key={e.estado} className="flex justify-between py-2 text-sm capitalize">
-                  <span>{e.estado.replace(/_/g, ' ')}</span>
-                  <span className="text-suave">{e.pedidos}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="tarjeta min-w-0 p-6">
-          <h2 className="text-lg">Stock bajo</h2>
+        <Panel titulo="Stock bajo" nota="5 unidades o menos">
           {data.stockBajo.length === 0 ? (
-            <p className="mt-4 text-sm text-suave">Ningún producto por debajo de 5 unidades.</p>
+            <p className="text-sm text-suave">Ningún producto por debajo de 5 unidades.</p>
           ) : (
-            <ul className="mt-4 divide-y divide-borde">
+            <ul className="divide-y divide-borde">
               {data.stockBajo.map((p) => (
-                <li key={p.id} className="flex min-w-0 items-baseline justify-between gap-3 py-2 text-sm">
+                <li
+                  key={p.id}
+                  className="flex min-w-0 items-baseline justify-between gap-3 py-2 text-sm"
+                >
                   <span className="min-w-0 truncate">
                     {p.nombre}
                     <span className="block text-[11px] text-suave">{p.categoria}</span>
@@ -316,7 +425,7 @@ export default function PanelVentas() {
               ))}
             </ul>
           )}
-        </div>
+        </Panel>
       </div>
     </div>
   );
