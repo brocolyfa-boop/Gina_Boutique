@@ -5,6 +5,7 @@ import { notFound } from '../lib/errors.js';
 import { toPromocionDTO } from '../lib/dto.js';
 import { requiereAdmin, requiereAuth } from '../middleware/auth.js';
 import { asyncHandler, validarBody } from '../middleware/validate.js';
+import { invalidarPromociones } from '../lib/promociones.js';
 
 const router = Router();
 
@@ -49,6 +50,9 @@ router.post(
   validarBody(promocionInputSchema),
   asyncHandler(async (req, res) => {
     const promo = await prisma.promotion.create({ data: req.body });
+    // Sin esto, una promoción recién creada tardaría hasta medio minuto en
+    // aplicarse y quien la creó pensaría que no funciona.
+    invalidarPromociones();
     res.status(201).json(toPromocionDTO(promo));
   }),
 );
@@ -60,6 +64,7 @@ router.patch(
   validarBody(promocionUpdateSchema),
   asyncHandler(async (req, res) => {
     const promo = await prisma.promotion.update({ where: { id: req.params.id }, data: req.body });
+    invalidarPromociones();
     res.json(toPromocionDTO(promo));
   }),
 );
@@ -70,6 +75,7 @@ router.delete(
   requiereAdmin,
   asyncHandler(async (req, res) => {
     await prisma.promotion.delete({ where: { id: req.params.id } });
+    invalidarPromociones();
     res.status(204).end();
   }),
 );

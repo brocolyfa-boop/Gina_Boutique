@@ -6,7 +6,7 @@ import {
   actualizarEstadoOrdenSchema,
   costoEnvioPara,
   crearOrdenSchema,
-  precioFinal,
+  precioConPromociones,
   redondear,
   type OrdenItemDTO,
 } from '@gina/shared';
@@ -20,6 +20,7 @@ import { authOpcional, requiereAdmin, requiereAuth } from '../middleware/auth.js
 import { asyncHandler, queryValidado, validarBody, validarQuery } from '../middleware/validate.js';
 import { construirDashboard } from '../lib/dashboard.js';
 import { notificarPedidoNuevo } from '../lib/notificaciones.js';
+import { promocionesVigentes } from '../lib/promociones.js';
 
 const router = Router();
 
@@ -47,6 +48,10 @@ router.post(
     // Falla temprano si el método no está habilitado, antes de tocar stock.
     const proveedor = proveedorDe(metodoPago);
 
+    // Se leen antes de abrir la transacción: dentro no conviene hacer nada que
+    // no sea imprescindible, y esta lista viene de caché casi siempre.
+    const promos = await promocionesVigentes();
+
     const orden = await prisma.$transaction(async (tx) => {
       const snapshot: OrdenItemDTO[] = [];
 
@@ -58,10 +63,19 @@ router.post(
         const color = normalizar(item.color);
         validarLinea(producto, { ...item, talla, color });
 
-        const unitario = precioFinal(num(producto.precio), numOrNull(producto.precioOferta), {
-          inicio: producto.ofertaInicio,
-          fin: producto.ofertaFin,
-        });
+        // El precio que se cobra sale del mismo cálculo que el mostrado en el
+        // catálogo y el carrito: oferta del producto y promociones vigentes.
+        const unitario = precioConPromociones(
+          {
+            id: producto.id,
+            categoriaId: producto.categoriaId,
+            precio: num(producto.precio),
+            precioOferta: numOrNull(producto.precioOferta),
+            ofertaInicio: producto.ofertaInicio,
+            ofertaFin: producto.ofertaFin,
+          },
+          promos,
+        );
 
         // Descuento condicionado: si otro cliente se llevó las últimas unidades
         // entre la validación y este update, count queda en 0 y abortamos todo.

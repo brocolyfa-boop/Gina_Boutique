@@ -1,8 +1,9 @@
 import type { Prisma, Product } from '@prisma/client';
 import type { CartDTO, CartItemDTO, CartItemInput } from '@gina/shared';
-import { precioFinal, redondear } from '@gina/shared';
+import { precioConPromociones, redondear, type PromocionAplicable } from '@gina/shared';
 import { env } from '../env.js';
 import { prisma } from '../prisma.js';
+import { promocionesVigentes } from './promociones.js';
 import { notFound, unprocessable } from './errors.js';
 import { num, numOrNull } from './dto.js';
 
@@ -70,13 +71,25 @@ type LineaConProducto = {
  * Arma el carrito que ven los clientes. Los precios y el costo de envío se
  * toman SIEMPRE de la base y del entorno, nunca de lo que manda el cliente.
  */
-export function armarCartDTO(lineas: LineaConProducto[]): CartDTO {
+export function armarCartDTO(
+  lineas: LineaConProducto[],
+  promociones: PromocionAplicable[],
+): CartDTO {
   const items: CartItemDTO[] = lineas.map((l) => {
     const precio = num(l.producto.precio);
-    const final = precioFinal(precio, numOrNull(l.producto.precioOferta), {
-      inicio: l.producto.ofertaInicio,
-      fin: l.producto.ofertaFin,
-    });
+    // Mismo cálculo que en el catálogo: si el carrito no mirara las
+    // promociones, el cliente vería un precio en la ficha y otro en la caja.
+    const final = precioConPromociones(
+      {
+        id: l.producto.id,
+        categoriaId: l.producto.categoriaId,
+        precio,
+        precioOferta: numOrNull(l.producto.precioOferta),
+        ofertaInicio: l.producto.ofertaInicio,
+        ofertaFin: l.producto.ofertaFin,
+      },
+      promociones,
+    );
     return {
       id: l.id ?? null,
       productoId: l.producto.id,
@@ -116,8 +129,9 @@ export async function leerCarrito(userId: string): Promise<CartDTO> {
     where: { userId },
     include: { items: { include: { producto: true }, orderBy: { id: 'asc' } } },
   });
-  if (!cart) return armarCartDTO([]);
-  return armarCartDTO(cart.items);
+  const promos = await promocionesVigentes();
+  if (!cart) return armarCartDTO([], promos);
+  return armarCartDTO(cart.items, promos);
 }
 
 /**

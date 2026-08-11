@@ -11,6 +11,7 @@ import {
 import { prisma } from '../prisma.js';
 import { notFound } from '../lib/errors.js';
 import { toProductoDTO } from '../lib/dto.js';
+import { promocionesVigentes } from '../lib/promociones.js';
 import { requiereAdmin, requiereAuth } from '../middleware/auth.js';
 import { asyncHandler, queryValidado, validarBody, validarQuery } from '../middleware/validate.js';
 
@@ -63,7 +64,7 @@ router.get(
       };
     }
 
-    const [total, productos] = await Promise.all([
+    const [total, productos, promos] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
@@ -72,11 +73,12 @@ router.get(
         skip: (q.page - 1) * q.limit,
         take: q.limit,
       }),
+      promocionesVigentes(),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / q.limit));
     const respuesta: Paginado<ProductoDTO> = {
-      data: productos.map(toProductoDTO),
+      data: productos.map((p) => toProductoDTO(p, promos)),
       page: q.page,
       limit: q.limit,
       total,
@@ -118,16 +120,19 @@ router.get(
     if (!producto) throw notFound('Producto no encontrado');
 
     // Relacionados de la misma categoría, para la ficha de producto.
-    const relacionados = await prisma.product.findMany({
-      where: { categoriaId: producto.categoriaId, activo: true, id: { not: producto.id } },
-      include: { categoria: true },
-      take: 8,
-      orderBy: { createdAt: 'desc' },
-    });
+    const [relacionados, promos] = await Promise.all([
+      prisma.product.findMany({
+        where: { categoriaId: producto.categoriaId, activo: true, id: { not: producto.id } },
+        include: { categoria: true },
+        take: 8,
+        orderBy: { createdAt: 'desc' },
+      }),
+      promocionesVigentes(),
+    ]);
 
     res.json({
-      ...toProductoDTO(producto),
-      relacionados: relacionados.map(toProductoDTO),
+      ...toProductoDTO(producto, promos),
+      relacionados: relacionados.map((r) => toProductoDTO(r, promos)),
     });
   }),
 );
@@ -146,7 +151,7 @@ router.get(
       ? { nombre: { contains: q.q, mode: 'insensitive' } }
       : {};
 
-    const [total, productos] = await Promise.all([
+    const [total, productos, promos] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
@@ -155,11 +160,12 @@ router.get(
         skip: (q.page - 1) * q.limit,
         take: q.limit,
       }),
+      promocionesVigentes(),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / q.limit));
     res.json({
-      data: productos.map(toProductoDTO),
+      data: productos.map((p) => toProductoDTO(p, promos)),
       page: q.page,
       limit: q.limit,
       total,
@@ -179,7 +185,7 @@ router.post(
       data: req.body,
       include: { categoria: true },
     });
-    res.status(201).json(toProductoDTO(producto));
+    res.status(201).json(toProductoDTO(producto, await promocionesVigentes()));
   }),
 );
 
@@ -194,7 +200,7 @@ router.patch(
       data: req.body,
       include: { categoria: true },
     });
-    res.json(toProductoDTO(producto));
+    res.json(toProductoDTO(producto, await promocionesVigentes()));
   }),
 );
 

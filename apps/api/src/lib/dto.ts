@@ -8,7 +8,12 @@ import type {
   PromocionDTO,
   UserDTO,
 } from '@gina/shared';
-import { descuentoPorcentaje, entregaEstimada, precioFinal } from '@gina/shared';
+import {
+  descuentoTotalPorcentaje,
+  entregaEstimada,
+  precioConPromociones,
+  type PromocionAplicable,
+} from '@gina/shared';
 import type { Prisma } from '@prisma/client';
 
 /** Prisma devuelve Decimal; los clientes esperan number. */
@@ -42,12 +47,25 @@ export function toCategoriaDTO(c: Category, totalProductos?: number): CategoriaD
   };
 }
 
-export function toProductoDTO(p: Product & { categoria: Category }): ProductoDTO {
+/**
+ * `promociones` es obligatorio a propósito: el precio mostrado tiene que ser el
+ * mismo que se cobra, y un parámetro opcional invita a olvidarlo en una ruta
+ * nueva y a anunciar un descuento que la caja no aplica.
+ */
+export function toProductoDTO(
+  p: Product & { categoria: Category },
+  promociones: PromocionAplicable[],
+): ProductoDTO {
   const precio = num(p.precio);
   const oferta = numOrNull(p.precioOferta);
-  // La vigencia se evalúa aquí, no en el cliente: el precio que se muestra tiene
-  // que ser el mismo que se cobra.
-  const vigencia = { inicio: p.ofertaInicio, fin: p.ofertaFin };
+  const promocionable = {
+    id: p.id,
+    categoriaId: p.categoriaId,
+    precio,
+    precioOferta: oferta,
+    ofertaInicio: p.ofertaInicio,
+    ofertaFin: p.ofertaFin,
+  };
   return {
     id: p.id,
     nombre: p.nombre,
@@ -56,8 +74,8 @@ export function toProductoDTO(p: Product & { categoria: Category }): ProductoDTO
     precioOferta: oferta,
     ofertaInicio: p.ofertaInicio?.toISOString() ?? null,
     ofertaFin: p.ofertaFin?.toISOString() ?? null,
-    precioFinal: precioFinal(precio, oferta, vigencia),
-    descuentoPorcentaje: descuentoPorcentaje(precio, oferta, vigencia),
+    precioFinal: precioConPromociones(promocionable, promociones),
+    descuentoPorcentaje: descuentoTotalPorcentaje(promocionable, promociones),
     categoria: { id: p.categoria.id, nombre: p.categoria.nombre, slug: p.categoria.slug },
     subcategoria: p.subcategoria,
     tallas: p.tallas,
