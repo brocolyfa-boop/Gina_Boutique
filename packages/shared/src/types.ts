@@ -111,7 +111,14 @@ export interface CartItemDTO {
 export interface CartDTO {
   items: CartItemDTO[];
   subtotal: number;
+  /**
+   * Envío estimado con la tarifa más barata: en el carrito todavía no se conoce
+   * la dirección. El definitivo se calcula en el checkout y lo confirma la API
+   * al crear la orden.
+   */
   costoEnvio: number;
+  /** true mientras el envío sea una estimación y no el cobro final. */
+  envioEstimado: boolean;
   total: number;
 }
 
@@ -145,7 +152,9 @@ export interface OrdenDTO {
 }
 
 export interface ConfigPublicaDTO {
+  /** Tarifa más barata. Sirve para el "desde L X" antes de conocer la dirección. */
   costoEnvioLps: number;
+  tarifasEnvio: { tegucigalpa: number; nacional: number };
   moneda: string;
   pixelpayMode: 'sandbox' | 'production';
   metodosPago: MetodoPago[];

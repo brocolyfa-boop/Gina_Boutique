@@ -98,15 +98,27 @@ faltaba `PIXELPAY_API_KEY`.
 | `PIXELPAY_MODE`         | `sandbox` o `production`.                                    |
 | `CLOUDINARY_URL`        | Subida de imágenes de producto (opcional en desarrollo).     |
 | `PORT`                  | Puerto HTTP. Railway lo inyecta solo.                        |
-| `COSTO_ENVIO_LPS`       | Costo de envío en lempiras. Ver nota abajo.                  |
+| `COSTO_ENVIO_TEGUCIGALPA_LPS` | Envío dentro de Tegucigalpa. Ver nota abajo.           |
+| `COSTO_ENVIO_NACIONAL_LPS` | Envío al resto del país.                                  |
+| `CLOUDINARY_URL`        | Subida de fotos de producto desde el panel.                  |
 | `CORS_ORIGINS`          | Orígenes permitidos, separados por coma.                     |
 
 ### Sobre el costo de envío
 
-El envío es fijo (65 LPS) y **no está hardcodeado en ningún frontend**. Vive en
-`COSTO_ENVIO_LPS` y la API lo publica en `GET /api/config`. Así se puede subir a
-70 u 80 lempiras cambiando una variable en Railway, sin recompilar la web ni
-republicar el APK en Google Play.
+El envío depende de la zona, como cobra la mensajería: **L 90 dentro de
+Tegucigalpa y L 120 al resto del país**, con entrega de 1 a 2 días. Vive en
+`COSTO_ENVIO_TEGUCIGALPA_LPS` y `COSTO_ENVIO_NACIONAL_LPS`, y la API lo publica
+en `GET /api/config`. Así se puede ajustar cuando la mensajería cambie sus
+precios, sin recompilar la web ni republicar el APK.
+
+La zona se decide con `esTegucigalpa()` en `@gina/shared`, que acepta las formas
+en que un cliente escribe la capital: "Tegucigalpa", "Distrito Central",
+"Comayagüela", con o sin acentos.
+
+El carrito muestra la tarifa **más barata como estimación** (todavía no conoce la
+dirección) y lo marca como tal; el checkout muestra la real al elegir
+departamento y municipio, y la API la recalcula al crear la orden. El cliente
+nunca decide cuánto paga de envío.
 
 ## API
 

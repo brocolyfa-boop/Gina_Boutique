@@ -9,7 +9,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type { CartDTO, CartItemInput, ConfigPublicaDTO, ProductoDTO } from '@gina/shared';
-import { COSTO_ENVIO_FALLBACK_LPS, precioFinal, redondear } from '@gina/shared';
+import { TARIFAS_ENVIO_FALLBACK, precioFinal, redondear } from '@gina/shared';
 import { api } from '../lib/api';
 import { useAuth } from './auth';
 
@@ -54,12 +54,14 @@ interface CarritoCtx {
 
 const Ctx = createContext<CarritoCtx | null>(null);
 
-const VACIO: CartDTO = { items: [], subtotal: 0, costoEnvio: 0, total: 0 };
+const VACIO: CartDTO = { items: [], subtotal: 0, costoEnvio: 0, envioEstimado: false, total: 0 };
 
 export function CarritoProvider({ children }: { children: ReactNode }) {
   const { user, cargando: cargandoAuth } = useAuth();
   const [carrito, setCarrito] = useState<CartDTO>(VACIO);
-  const [costoEnvio, setCostoEnvio] = useState(COSTO_ENVIO_FALLBACK_LPS);
+  const [costoEnvio, setCostoEnvio] = useState(
+    Math.min(TARIFAS_ENVIO_FALLBACK.tegucigalpa, TARIFAS_ENVIO_FALLBACK.nacional),
+  );
   const [cargando, setCargando] = useState(false);
 
   // El costo de envío lo manda el backend: así se puede cambiar sin recompilar.
@@ -90,7 +92,13 @@ export function CarritoProvider({ children }: { children: ReactNode }) {
       }));
       const subtotal = redondear(items.reduce((a, i) => a + i.totalLinea, 0));
       const envioReal = items.length > 0 ? envio : 0;
-      setCarrito({ items, subtotal, costoEnvio: envioReal, total: redondear(subtotal + envioReal) });
+      setCarrito({
+        items,
+        subtotal,
+        costoEnvio: envioReal,
+        envioEstimado: items.length > 0,
+        total: redondear(subtotal + envioReal),
+      });
     },
     [],
   );

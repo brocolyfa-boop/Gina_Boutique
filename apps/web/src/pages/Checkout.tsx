@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { ConfigPublicaDTO, MetodoPago, OrdenDTO } from '@gina/shared';
-import { DEPARTAMENTOS_HONDURAS, entregaEstimada, formatLps } from '@gina/shared';
+import {
+  DEPARTAMENTOS_HONDURAS,
+  costoEnvioPara,
+  entregaEstimada,
+  formatLps,
+  redondear,
+} from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { useCarrito } from '../store/carrito';
@@ -57,6 +63,17 @@ export default function Checkout() {
     () => (form.departamento ? entregaEstimada(form.departamento) : null),
     [form.departamento],
   );
+
+  /**
+   * El envío depende de la zona, así que el total solo es definitivo cuando el
+   * cliente ya eligió departamento y municipio. Antes de eso se muestra la
+   * estimación que trae el carrito, marcada como tal.
+   */
+  const zonaCompleta = Boolean(form.departamento && form.municipio.trim());
+  const envioCalculado = zonaCompleta && config
+    ? costoEnvioPara(form.departamento, form.municipio, config.tarifasEnvio)
+    : carrito.costoEnvio;
+  const totalConEnvio = redondear(carrito.subtotal + envioCalculado);
 
   if (orden) {
     return (
@@ -282,10 +299,19 @@ export default function Checkout() {
 
             {entrega && (
               <p className="mt-4 text-sm text-suave">
-                Entrega estimada a {form.departamento}:{' '}
+                Entrega a {form.departamento}:{' '}
                 <strong className="text-tinta">
                   {entrega.diasMin} a {entrega.diasMax} días hábiles
                 </strong>
+                {zonaCompleta && config && (
+                  <>
+                    {' · Envío '}
+                    <strong className="text-tinta">{formatLps(envioCalculado)}</strong>
+                    {envioCalculado === config.tarifasEnvio.tegucigalpa
+                      ? ' (dentro de Tegucigalpa)'
+                      : ' (nacional)'}
+                  </>
+                )}
                 .
               </p>
             )}
@@ -368,12 +394,15 @@ export default function Checkout() {
                 <dd>{formatLps(carrito.subtotal)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-suave">Envío</dt>
-                <dd>{formatLps(carrito.costoEnvio)}</dd>
+                <dt className="text-suave">
+                  Envío
+                  {!zonaCompleta && <span className="block text-xs">estimado</span>}
+                </dt>
+                <dd>{formatLps(envioCalculado)}</dd>
               </div>
               <div className="flex justify-between border-t border-borde pt-2 text-base font-medium">
                 <dt>Total</dt>
-                <dd>{formatLps(carrito.total)}</dd>
+                <dd>{formatLps(totalConEnvio)}</dd>
               </div>
             </dl>
 

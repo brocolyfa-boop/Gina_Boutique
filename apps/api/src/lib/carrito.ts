@@ -96,10 +96,19 @@ export function armarCartDTO(lineas: LineaConProducto[]): CartDTO {
   });
 
   const subtotal = redondear(items.reduce((acc, i) => acc + i.totalLinea, 0));
-  // Carrito vacío no cobra envío: mostrar L 65 de total sería absurdo.
-  const costoEnvio = items.length > 0 ? env.COSTO_ENVIO_LPS : 0;
+  // El envío depende de la zona y aquí todavía no se conoce la dirección, así
+  // que se muestra la tarifa más barata como estimación. El definitivo lo fija
+  // la API al crear la orden, con el departamento y municipio reales.
+  const tarifaMinima = Math.min(env.tarifasEnvio.tegucigalpa, env.tarifasEnvio.nacional);
+  const costoEnvio = items.length > 0 ? tarifaMinima : 0;
 
-  return { items, subtotal, costoEnvio, total: redondear(subtotal + costoEnvio) };
+  return {
+    items,
+    subtotal,
+    costoEnvio,
+    envioEstimado: items.length > 0,
+    total: redondear(subtotal + costoEnvio),
+  };
 }
 
 export async function leerCarrito(userId: string): Promise<CartDTO> {

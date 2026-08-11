@@ -21,7 +21,8 @@ router.get('/', (_req, res) => {
   const config: ConfigPublicaDTO & {
     metodosPagoDetalle: Array<{ metodo: string; etiqueta: string; descripcion: string }>;
   } = {
-    costoEnvioLps: env.COSTO_ENVIO_LPS,
+    costoEnvioLps: Math.min(env.tarifasEnvio.tegucigalpa, env.tarifasEnvio.nacional),
+    tarifasEnvio: env.tarifasEnvio,
     moneda: MONEDA,
     pixelpayMode: env.PIXELPAY_MODE,
     // Solo los métodos realmente cobrables. Mientras no haya pasarela de

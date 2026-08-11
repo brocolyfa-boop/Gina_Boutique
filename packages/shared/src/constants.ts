@@ -1,36 +1,83 @@
-/**
- * Constantes compartidas entre api, web y mobile.
- *
- * Regla importante: el costo de envío NO vive aquí como número final. El backend
- * lo expone en `GET /api/config` leyéndolo de `COSTO_ENVIO_LPS`, para poder
- * cambiarlo sin republicar la app Android. Lo que sigue es solo el valor de
- * respaldo por si el cliente aún no ha podido leer la config.
- */
-export const COSTO_ENVIO_FALLBACK_LPS = 65;
-
+/** Constantes compartidas entre api, web y mobile. */
 export const MONEDA = 'HNL' as const;
 export const MONEDA_SIMBOLO = 'L' as const;
 
-/** Los 18 departamentos de Honduras, con el rango estimado de entrega en días. */
+/**
+ * Tarifas de envío de la mensajería, en lempiras. No viven aquí como verdad
+ * final: el backend las publica en `GET /api/config` leyéndolas del entorno,
+ * para poder cambiarlas sin republicar la app de Android. Esto es solo el
+ * respaldo por si el cliente aún no pudo leer la config.
+ */
+export const TARIFAS_ENVIO_FALLBACK = {
+  tegucigalpa: 90,
+  nacional: 120,
+} as const;
+
+export interface TarifasEnvio {
+  /** Entregas dentro de Tegucigalpa. */
+  tegucigalpa: number;
+  /** El resto del país. */
+  nacional: number;
+}
+
+/** Quita acentos y mayúsculas para comparar nombres escritos a mano. */
+const normalizarTexto = (v: string): string =>
+  v
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+/**
+ * La capital aparece escrita de varias formas y el cliente la teclea libremente.
+ * Todas estas cuentan como "dentro de Tegucigalpa" para la tarifa.
+ */
+const MUNICIPIOS_CAPITAL = ['tegucigalpa', 'distrito central', 'comayaguela', 'mdc', 'd.c.'];
+
+export function esTegucigalpa(departamento: string, municipio: string): boolean {
+  if (normalizarTexto(departamento) !== 'francisco morazan') return false;
+  const m = normalizarTexto(municipio);
+  return MUNICIPIOS_CAPITAL.some((c) => m === c || m.includes(c));
+}
+
+/**
+ * Cuánto cuesta enviar a una zona. La misma función la usan la web, la app y el
+ * servidor: si divergieran, el cliente vería un total y pagaría otro.
+ */
+export function costoEnvioPara(
+  departamento: string,
+  municipio: string,
+  tarifas: TarifasEnvio = TARIFAS_ENVIO_FALLBACK,
+): number {
+  return esTegucigalpa(departamento, municipio) ? tarifas.tegucigalpa : tarifas.nacional;
+}
+
+/**
+ * Los 18 departamentos de Honduras con su rango de entrega en días.
+ *
+ * La mensajería entrega en 1 a 2 días en todo el país, así que hoy el rango es
+ * igual en todos. Se mantiene por departamento porque es lo primero que va a
+ * cambiar cuando se sumen zonas lejanas o una segunda mensajería.
+ */
 export const DEPARTAMENTOS_HONDURAS = [
-  { nombre: 'Atlántida', diasMin: 2, diasMax: 4 },
-  { nombre: 'Choluteca', diasMin: 2, diasMax: 5 },
-  { nombre: 'Colón', diasMin: 3, diasMax: 6 },
-  { nombre: 'Comayagua', diasMin: 1, diasMax: 3 },
-  { nombre: 'Copán', diasMin: 3, diasMax: 5 },
-  { nombre: 'Cortés', diasMin: 1, diasMax: 3 },
-  { nombre: 'El Paraíso', diasMin: 2, diasMax: 4 },
+  { nombre: 'Atlántida', diasMin: 1, diasMax: 2 },
+  { nombre: 'Choluteca', diasMin: 1, diasMax: 2 },
+  { nombre: 'Colón', diasMin: 1, diasMax: 2 },
+  { nombre: 'Comayagua', diasMin: 1, diasMax: 2 },
+  { nombre: 'Copán', diasMin: 1, diasMax: 2 },
+  { nombre: 'Cortés', diasMin: 1, diasMax: 2 },
+  { nombre: 'El Paraíso', diasMin: 1, diasMax: 2 },
   { nombre: 'Francisco Morazán', diasMin: 1, diasMax: 2 },
-  { nombre: 'Gracias a Dios', diasMin: 5, diasMax: 10 },
-  { nombre: 'Intibucá', diasMin: 3, diasMax: 5 },
-  { nombre: 'Islas de la Bahía', diasMin: 4, diasMax: 7 },
-  { nombre: 'La Paz', diasMin: 2, diasMax: 4 },
-  { nombre: 'Lempira', diasMin: 3, diasMax: 6 },
-  { nombre: 'Ocotepeque', diasMin: 3, diasMax: 6 },
-  { nombre: 'Olancho', diasMin: 3, diasMax: 5 },
-  { nombre: 'Santa Bárbara', diasMin: 2, diasMax: 4 },
-  { nombre: 'Valle', diasMin: 2, diasMax: 5 },
-  { nombre: 'Yoro', diasMin: 2, diasMax: 4 },
+  { nombre: 'Gracias a Dios', diasMin: 1, diasMax: 2 },
+  { nombre: 'Intibucá', diasMin: 1, diasMax: 2 },
+  { nombre: 'Islas de la Bahía', diasMin: 1, diasMax: 2 },
+  { nombre: 'La Paz', diasMin: 1, diasMax: 2 },
+  { nombre: 'Lempira', diasMin: 1, diasMax: 2 },
+  { nombre: 'Ocotepeque', diasMin: 1, diasMax: 2 },
+  { nombre: 'Olancho', diasMin: 1, diasMax: 2 },
+  { nombre: 'Santa Bárbara', diasMin: 1, diasMax: 2 },
+  { nombre: 'Valle', diasMin: 1, diasMax: 2 },
+  { nombre: 'Yoro', diasMin: 1, diasMax: 2 },
 ] as const;
 
 export const DEPARTAMENTOS = DEPARTAMENTOS_HONDURAS.map((d) => d.nombre);
@@ -39,7 +86,7 @@ export type Departamento = (typeof DEPARTAMENTOS_HONDURAS)[number]['nombre'];
 
 export function entregaEstimada(departamento: string): { diasMin: number; diasMax: number } {
   const dep = DEPARTAMENTOS_HONDURAS.find((d) => d.nombre === departamento);
-  return dep ? { diasMin: dep.diasMin, diasMax: dep.diasMax } : { diasMin: 3, diasMax: 7 };
+  return dep ? { diasMin: dep.diasMin, diasMax: dep.diasMax } : { diasMin: 1, diasMax: 2 };
 }
 
 export const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;

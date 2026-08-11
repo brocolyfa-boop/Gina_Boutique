@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { CategoriaDTO } from '@gina/shared';
-import { MARCA, formatLps } from '@gina/shared';
+import { MARCA } from '@gina/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { useCarrito } from '../store/carrito';
@@ -91,7 +91,7 @@ function Buscador() {
 
 export default function Layout() {
   const { user, esAdmin, salir } = useAuth();
-  const { unidades, carrito } = useCarrito();
+  const { unidades } = useCarrito();
   const navigate = useNavigate();
 
   const { data: categorias } = useQuery({
@@ -104,7 +104,7 @@ export default function Layout() {
     <div className="flex min-h-screen flex-col">
       {/* Franja de envío: lo primero que un cliente en Honduras quiere saber. */}
       <div className="bg-tinta py-2 text-center text-[11px] uppercase tracking-etiqueta text-white">
-        Envíos a los 18 departamentos · {formatLps(carrito.costoEnvio || 65)} de envío
+        Envíos a los 18 departamentos · Entrega en 1 a 2 días
       </div>
 
       <header className="sticky top-0 z-20 border-b border-borde bg-white/95 backdrop-blur">
@@ -215,9 +215,8 @@ export default function Layout() {
           <div>
             <p className="etiqueta">Envíos</p>
             <p className="mt-3 text-sm text-suave">
-              Cobertura en los 18 departamentos de Honduras. Costo fijo de{' '}
-              {formatLps(carrito.costoEnvio || 65)}. El tiempo estimado se muestra al elegir tu
-              departamento.
+              Cobertura en los 18 departamentos de Honduras, con entrega de 1 a 2 días. El
+              costo depende de la zona y se calcula al elegir tu departamento y municipio.
             </p>
           </div>
           <div>

@@ -85,7 +85,10 @@ export default function Carrito() {
                 <dd>{formatLps(carrito.subtotal)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-suave">Envío</dt>
+                <dt className="text-suave">
+                  Envío
+                  {carrito.envioEstimado && <span className="block text-xs">desde</span>}
+                </dt>
                 <dd>{formatLps(carrito.costoEnvio)}</dd>
               </div>
               <div className="flex justify-between border-t border-borde pt-3 text-base font-medium">
@@ -93,6 +96,12 @@ export default function Carrito() {
                 <dd>{formatLps(carrito.total)}</dd>
               </div>
             </dl>
+
+            {carrito.envioEstimado && (
+              <p className="mt-3 text-xs text-suave">
+                El envío final depende de tu zona: se calcula al elegir departamento y municipio.
+              </p>
+            )}
 
             <Link to="/checkout" className="btn-principal mt-6 w-full">
               Continuar

@@ -14,7 +14,11 @@ const envSchema = z.object({
   PIXELPAY_MODE: z.enum(['sandbox', 'production']).default('sandbox'),
   CLOUDINARY_URL: z.string().default(''),
   PORT: z.coerce.number().int().positive().default(3000),
-  COSTO_ENVIO_LPS: z.coerce.number().nonnegative().default(65),
+  // Tarifas de la mensajería. COSTO_ENVIO_LPS se mantiene como respaldo para no
+  // romper despliegues que aún no tengan las dos nuevas.
+  COSTO_ENVIO_LPS: z.coerce.number().nonnegative().default(120),
+  COSTO_ENVIO_TEGUCIGALPA_LPS: z.coerce.number().nonnegative().optional(),
+  COSTO_ENVIO_NACIONAL_LPS: z.coerce.number().nonnegative().optional(),
   // Se incluyen las variantes con 127.0.0.1: el navegador manda cabecera
   // Origin en los POST aunque sean del mismo origen, y localhost y 127.0.0.1
   // son orígenes distintos para esa comprobación.
@@ -40,6 +44,10 @@ const raw = parsed.data;
 export const env = {
   ...raw,
   isProd: raw.NODE_ENV === 'production',
+  tarifasEnvio: {
+    tegucigalpa: raw.COSTO_ENVIO_TEGUCIGALPA_LPS ?? raw.COSTO_ENVIO_LPS,
+    nacional: raw.COSTO_ENVIO_NACIONAL_LPS ?? raw.COSTO_ENVIO_LPS,
+  },
   // Se normalizan (sin espacios, sin barra final, en minúsculas) porque un
   // origen se compara literalmente: "https://x.app/" y "https://x.app" son
   // distintos para la comparación y el fallo resultante es silencioso.

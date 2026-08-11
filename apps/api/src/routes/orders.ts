@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Prisma } from '@prisma/client';
 import {
   actualizarEstadoOrdenSchema,
+  costoEnvioPara,
   crearOrdenSchema,
   precioFinal,
   redondear,
@@ -83,7 +84,9 @@ router.post(
       const subtotal = redondear(
         snapshot.reduce((acc, i) => acc + i.precioUnitario * i.cantidad, 0),
       );
-      const costoEnvio = env.COSTO_ENVIO_LPS;
+      // El envío sale de la zona de entrega, no de lo que mande el cliente:
+      // dentro de Tegucigalpa la mensajería cobra menos que al resto del país.
+      const costoEnvio = costoEnvioPara(envio.departamento, envio.municipio, env.tarifasEnvio);
 
       const creada = await tx.order.create({
         data: {

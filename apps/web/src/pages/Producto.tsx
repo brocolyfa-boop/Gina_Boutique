@@ -218,7 +218,7 @@ export default function Producto() {
           <dl className="mt-10 space-y-2 border-t border-borde pt-6 text-sm text-suave">
             <div className="flex justify-between">
               <dt>Envío</dt>
-              <dd>Fijo a los 18 departamentos</dd>
+              <dd>1 a 2 días · según zona</dd>
             </div>
             <div className="flex justify-between">
               <dt>Pago</dt>
