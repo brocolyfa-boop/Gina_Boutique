@@ -30,7 +30,8 @@ export function crearApp() {
         // lanzar convertía un problema de configuración en un 500 con el
         // mensaje interno dentro, y el navegador ya bloquea la respuesta al no
         // ver la cabecera. Así el fallo se diagnostica en vez de confundir.
-        cb(null, !origin || env.corsOrigins.includes(origin));
+        const normalizado = origin?.trim().replace(/\/+$/, '').toLowerCase();
+        cb(null, !normalizado || env.corsOrigins.includes(normalizado));
       },
       credentials: true,
     }),

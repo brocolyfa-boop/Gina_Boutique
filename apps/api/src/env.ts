@@ -40,8 +40,11 @@ const raw = parsed.data;
 export const env = {
   ...raw,
   isProd: raw.NODE_ENV === 'production',
+  // Se normalizan (sin espacios, sin barra final, en minúsculas) porque un
+  // origen se compara literalmente: "https://x.app/" y "https://x.app" son
+  // distintos para la comparación y el fallo resultante es silencioso.
   corsOrigins: raw.CORS_ORIGINS.split(',')
-    .map((o) => o.trim())
+    .map((o) => o.trim().replace(/\/+$/, '').toLowerCase())
     .filter(Boolean),
 } as const;
 
