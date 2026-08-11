@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CategoriaDTO, EstadoOrden, OrdenDTO, Paginado, ProductoDTO } from '@gina/shared';
-import { ESTADOS_ORDEN, formatLps } from '@gina/shared';
+import { ESTADOS_ORDEN, enlaceWhatsApp, formatLps, mensajeEstadoWhatsApp } from '@gina/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { Skeleton, Vacio } from '../components/ui';
@@ -60,6 +60,7 @@ function Pedidos() {
                 <th className="py-3 font-normal text-suave">Envío a</th>
                 <th className="py-3 font-normal text-suave">Total</th>
                 <th className="py-3 font-normal text-suave">Estado</th>
+                <th className="py-3 font-normal text-suave"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-borde">
@@ -68,8 +69,11 @@ function Pedidos() {
                   <td className="py-3">
                     <span className="font-medium">{o.numero}</span>
                     <span className="block text-xs text-suave">
-                      {o.items.length} {o.items.length === 1 ? 'artículo' : 'artículos'} ·{' '}
-                      {o.telefonoContacto}
+                      {o.nombreCliente} · {o.telefonoContacto}
+                    </span>
+                    <span className="block text-xs text-suave">
+                      {o.items.length} {o.items.length === 1 ? 'artículo' : 'artículos'}
+                      {o.esInvitado && ' · sin cuenta'}
                     </span>
                   </td>
                   <td className="py-3 text-suave">
@@ -93,6 +97,27 @@ function Pedidos() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="py-3 text-right">
+                    {/*
+                      Avisar al cliente en un clic. El mensaje va escrito según
+                      el estado; solo hay que darle enviar. Mientras no haya
+                      credenciales de Meta para mandarlo solo, esto es lo que
+                      evita que el comprador se quede sin saber nada.
+                    */}
+                    <a
+                      href={
+                        enlaceWhatsApp(
+                          o.telefonoContacto,
+                          mensajeEstadoWhatsApp(o, o.estado),
+                        ) ?? '#'
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="whitespace-nowrap text-xs uppercase tracking-etiqueta text-verde hover:underline"
+                    >
+                      Avisar
+                    </a>
                   </td>
                 </tr>
               ))}
