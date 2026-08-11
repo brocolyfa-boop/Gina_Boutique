@@ -52,7 +52,10 @@ router.post(
         const color = normalizar(item.color);
         validarLinea(producto, { ...item, talla, color });
 
-        const unitario = precioFinal(num(producto.precio), numOrNull(producto.precioOferta));
+        const unitario = precioFinal(num(producto.precio), numOrNull(producto.precioOferta), {
+          inicio: producto.ofertaInicio,
+          fin: producto.ofertaFin,
+        });
 
         // Descuento condicionado: si otro cliente se llevó las últimas unidades
         // entre la validación y este update, count queda en 0 y abortamos todo.

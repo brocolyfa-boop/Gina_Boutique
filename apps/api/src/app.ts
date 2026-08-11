@@ -13,6 +13,7 @@ import configRoutes from './routes/config.js';
 import orderRoutes from './routes/orders.js';
 import productRoutes from './routes/products.js';
 import promotionRoutes from './routes/promotions.js';
+import uploadRoutes from './routes/uploads.js';
 
 export function crearApp() {
   const app = express();
@@ -49,6 +50,7 @@ export function crearApp() {
   app.use('/api/carrito', cartRoutes);
   app.use('/api/ordenes', orderRoutes);
   app.use('/api/direcciones', addressRoutes);
+  app.use('/api/imagenes', uploadRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

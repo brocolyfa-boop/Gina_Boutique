@@ -46,7 +46,16 @@ router.get(
     if (q.talla) where.tallas = { has: q.talla };
     if (q.color) where.colores = { has: q.color };
     if (q.destacado) where.destacado = true;
-    if (q.enOferta) where.precioOferta = { not: null };
+    if (q.enOferta) {
+      // "En oferta" es tener precio rebajado Y estar dentro de la ventana. Sin
+      // las fechas, el catálogo seguiría anunciando ofertas ya vencidas.
+      const ahora = new Date();
+      where.precioOferta = { not: null };
+      where.AND = [
+        { OR: [{ ofertaInicio: null }, { ofertaInicio: { lte: ahora } }] },
+        { OR: [{ ofertaFin: null }, { ofertaFin: { gte: ahora } }] },
+      ];
+    }
     if (q.precioMin != null || q.precioMax != null) {
       where.precio = {
         ...(q.precioMin != null && { gte: q.precioMin }),

@@ -13,15 +13,51 @@ export function formatLps(valor: number): string {
   })}`;
 }
 
-export function precioFinal(precio: number, precioOferta?: number | null): number {
-  return precioOferta != null && precioOferta > 0 && precioOferta < precio
-    ? redondear(precioOferta)
+/** Ventana de vigencia de una oferta. Ambos extremos son opcionales. */
+export interface VigenciaOferta {
+  inicio?: string | Date | null;
+  fin?: string | Date | null;
+}
+
+/**
+ * Una oferta cuenta solo si el precio rebajado tiene sentido Y estamos dentro de
+ * su ventana. Sin fechas, aplica siempre. Es la misma regla en la web, en la app
+ * y en el servidor: si divergieran, el cliente vería un precio y pagaría otro.
+ */
+export function ofertaVigente(
+  precio: number,
+  precioOferta?: number | null,
+  vigencia?: VigenciaOferta,
+  ahora: Date = new Date(),
+): boolean {
+  if (precioOferta == null || precioOferta <= 0 || precioOferta >= precio) return false;
+
+  const inicio = vigencia?.inicio ? new Date(vigencia.inicio) : null;
+  if (inicio && ahora < inicio) return false;
+
+  const fin = vigencia?.fin ? new Date(vigencia.fin) : null;
+  if (fin && ahora > fin) return false;
+
+  return true;
+}
+
+export function precioFinal(
+  precio: number,
+  precioOferta?: number | null,
+  vigencia?: VigenciaOferta,
+): number {
+  return ofertaVigente(precio, precioOferta, vigencia)
+    ? redondear(precioOferta as number)
     : redondear(precio);
 }
 
-export function descuentoPorcentaje(precio: number, precioOferta?: number | null): number | null {
-  if (precioOferta == null || precioOferta <= 0 || precioOferta >= precio) return null;
-  return Math.round(((precio - precioOferta) / precio) * 100);
+export function descuentoPorcentaje(
+  precio: number,
+  precioOferta?: number | null,
+  vigencia?: VigenciaOferta,
+): number | null {
+  if (!ofertaVigente(precio, precioOferta, vigencia)) return null;
+  return Math.round(((precio - (precioOferta as number)) / precio) * 100);
 }
 
 /** Total de la orden: subtotal + envío fijo. El envío llega del backend. */

@@ -1,6 +1,7 @@
 import type { Category, Order, Product, Promotion, User } from '@prisma/client';
 import type {
   CategoriaDTO,
+  MedidasPrenda,
   OrdenDTO,
   OrdenItemDTO,
   ProductoDTO,
@@ -44,14 +45,19 @@ export function toCategoriaDTO(c: Category, totalProductos?: number): CategoriaD
 export function toProductoDTO(p: Product & { categoria: Category }): ProductoDTO {
   const precio = num(p.precio);
   const oferta = numOrNull(p.precioOferta);
+  // La vigencia se evalúa aquí, no en el cliente: el precio que se muestra tiene
+  // que ser el mismo que se cobra.
+  const vigencia = { inicio: p.ofertaInicio, fin: p.ofertaFin };
   return {
     id: p.id,
     nombre: p.nombre,
     descripcion: p.descripcion,
     precio,
     precioOferta: oferta,
-    precioFinal: precioFinal(precio, oferta),
-    descuentoPorcentaje: descuentoPorcentaje(precio, oferta),
+    ofertaInicio: p.ofertaInicio?.toISOString() ?? null,
+    ofertaFin: p.ofertaFin?.toISOString() ?? null,
+    precioFinal: precioFinal(precio, oferta, vigencia),
+    descuentoPorcentaje: descuentoPorcentaje(precio, oferta, vigencia),
     categoria: { id: p.categoria.id, nombre: p.categoria.nombre, slug: p.categoria.slug },
     subcategoria: p.subcategoria,
     tallas: p.tallas,
@@ -60,6 +66,17 @@ export function toProductoDTO(p: Product & { categoria: Category }): ProductoDTO
     imagenes: p.imagenes,
     destacado: p.destacado,
     activo: p.activo,
+    sku: p.sku,
+    marca: p.marca,
+    material: p.material,
+    tipoPrenda: p.tipoPrenda,
+    medidas: (p.medidas as MedidasPrenda | null) ?? null,
+    envio: {
+      pesoGramos: p.pesoGramos,
+      altoCm: numOrNull(p.altoCm),
+      anchoCm: numOrNull(p.anchoCm),
+      largoCm: numOrNull(p.largoCm),
+    },
     createdAt: p.createdAt.toISOString(),
   };
 }

@@ -28,12 +28,33 @@ export interface CategoriaDTO {
   totalProductos?: number;
 }
 
+/** Medidas de la prenda, en centímetros. Todas opcionales. */
+export interface MedidasPrenda {
+  pecho?: number;
+  cintura?: number;
+  cadera?: number;
+  largo?: number;
+  manga?: number;
+  tiro?: number;
+}
+
+/** Datos para cotizar el envío de un producto. */
+export interface EnvioProducto {
+  pesoGramos: number | null;
+  altoCm: number | null;
+  anchoCm: number | null;
+  largoCm: number | null;
+}
+
 export interface ProductoDTO {
   id: string;
   nombre: string;
   descripcion: string;
   precio: number;
   precioOferta: number | null;
+  /** Ventana de la oferta. Null en ambos = la oferta no caduca. */
+  ofertaInicio: string | null;
+  ofertaFin: string | null;
   /** Precio que realmente paga el cliente (oferta si existe, si no el base). */
   precioFinal: number;
   descuentoPorcentaje: number | null;
@@ -45,6 +66,12 @@ export interface ProductoDTO {
   imagenes: string[];
   destacado: boolean;
   activo: boolean;
+  sku: string | null;
+  marca: string | null;
+  material: string | null;
+  tipoPrenda: string | null;
+  medidas: MedidasPrenda | null;
+  envio: EnvioProducto;
   createdAt: string;
 }
 

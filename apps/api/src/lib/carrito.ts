@@ -73,7 +73,10 @@ type LineaConProducto = {
 export function armarCartDTO(lineas: LineaConProducto[]): CartDTO {
   const items: CartItemDTO[] = lineas.map((l) => {
     const precio = num(l.producto.precio);
-    const final = precioFinal(precio, numOrNull(l.producto.precioOferta));
+    const final = precioFinal(precio, numOrNull(l.producto.precioOferta), {
+      inicio: l.producto.ofertaInicio,
+      fin: l.producto.ofertaFin,
+    });
     return {
       id: l.id ?? null,
       productoId: l.producto.id,
