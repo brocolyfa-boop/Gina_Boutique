@@ -6,8 +6,34 @@
     <title>Gina Boutique — Descubre la moda que te hace brillar</title>
     <meta
       name="description"
-      content="Tienda de ropa, calzado y accesorios en Honduras. Envíos a los 18 departamentos por L 65."
+      content="Tienda de ropa, calzado y accesorios en Honduras. Envíos a los 18 departamentos, entrega en 1 a 2 días y pago contra entrega."
     />
+
+    <!--
+      Vista previa al compartir el enlace. Sin esto, mandar la tienda por
+      WhatsApp o pegarla en Instagram muestra una dirección pelada, sin foto ni
+      texto — que es justo por donde llegan los clientes de esta tienda.
+
+      og:url y og:image se dejan absolutos y apuntando al dominio de producción:
+      las redes no resuelven rutas relativas al generar la tarjeta.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Gina Boutique" />
+    <meta property="og:locale" content="es_HN" />
+    <meta property="og:title" content="Gina Boutique — Descubre la moda que te hace brillar" />
+    <meta
+      property="og:description"
+      content="Ropa, calzado y accesorios con envío a los 18 departamentos de Honduras. Entrega en 1 a 2 días y pago contra entrega."
+    />
+    <meta property="og:url" content="https://ginaweb-production.up.railway.app/" />
+    <meta
+      property="og:image"
+      content="https://ginaweb-production.up.railway.app/portada.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Gina Boutique" />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- Favicon: el monograma GR en negro sobre blanco, en SVG embebido para
          no depender de un archivo externo ni de una petición extra. -->
     <link

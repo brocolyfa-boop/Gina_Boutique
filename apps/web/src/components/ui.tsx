@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { ProductoDTO } from '@gina/shared';
-import { formatLps } from '@gina/shared';
+import { MARCA, formatLps } from '@gina/shared';
 
 /** Imagen con carga diferida y un fondo que evita el salto de layout. */
 export function Imagen({
@@ -16,15 +16,32 @@ export function Imagen({
   ratio?: string;
 }) {
   const [lista, setLista] = useState(false);
+  const [fallo, setFallo] = useState(false);
+
+  /*
+    Cuando no hay foto —o la que hay no carga— se pinta el monograma en vez de
+    un rectángulo gris vacío. Un hueco gris se lee como "esta página está rota";
+    el monograma se lee como "esta prenda todavía no tiene foto".
+  */
+  const sinImagen = !src || fallo;
+
   return (
     <div className={`relative overflow-hidden bg-[#F1EEEC] ${ratio} ${className}`}>
-      {src && (
+      {sinImagen ? (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-center">
+          <img src={MARCA.logoUrl} alt="" className="w-1/3 max-w-[6rem] opacity-40" />
+          <span className="px-3 text-[10px] uppercase tracking-etiqueta text-suave">
+            Foto en camino
+          </span>
+        </div>
+      ) : (
         <img
           src={src}
           alt={alt}
           loading="lazy"
           decoding="async"
           onLoad={() => setLista(true)}
+          onError={() => setFallo(true)}
           className={`h-full w-full object-cover transition-opacity duration-500 ${
             lista ? 'opacity-100' : 'opacity-0'
           }`}

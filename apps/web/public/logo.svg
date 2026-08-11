@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Gina Boutique">
+  <title>Gina Boutique</title>
+  <!--
+    Monograma de la marca. Va como archivo del proyecto y no como imagen
+    externa: una demostración no puede depender de que un servicio ajeno
+    responda, y un logotipo que tarda o falla es lo primero que se nota.
+  -->
+  <rect width="200" height="200" fill="#FFFFFF"/>
+  <rect x="8" y="8" width="184" height="184" fill="none" stroke="#111111" stroke-width="1.5"/>
+  <text x="100" y="112" text-anchor="middle"
+        font-family="'Playfair Display', 'Cormorant Garamond', Georgia, 'Times New Roman', serif"
+        font-size="82" fill="#111111" letter-spacing="2">GR</text>
+  <text x="100" y="148" text-anchor="middle"
+        font-family="Inter, 'Helvetica Neue', Arial, sans-serif"
+        font-size="13" fill="#6B6663" letter-spacing="6">BOUTIQUE</text>
+</svg>
