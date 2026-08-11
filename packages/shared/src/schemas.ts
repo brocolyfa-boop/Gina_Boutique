@@ -192,6 +192,12 @@ export const addressInputSchema = direccionEnvioSchema.extend({
 export const crearOrdenSchema = z.object({
   items: z.array(cartItemSchema).min(1, 'El carrito está vacío'),
   envio: direccionEnvioSchema,
+  /**
+   * Solo para compras de invitado, y opcional incluso ahí: en Honduras mucha
+   * gente compra sin dar correo. El contacto obligatorio es el teléfono, que ya
+   * viene en `envio`.
+   */
+  emailCliente: z.string().trim().email('Correo inválido').optional().or(z.literal('')),
   metodoPago: z.enum(METODOS_PAGO),
   /**
    * Token de tarjeta generado en el cliente por el SDK de PixelPay.

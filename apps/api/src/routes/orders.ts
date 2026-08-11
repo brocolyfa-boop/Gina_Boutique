@@ -16,13 +16,12 @@ import { forbidden, notFound, unprocessable } from '../lib/errors.js';
 import { num, numOrNull, toOrdenDTO } from '../lib/dto.js';
 import { normalizar, validarLinea } from '../lib/carrito.js';
 import { proveedorDe } from '../lib/pagos.js';
-import { requiereAdmin, requiereAuth } from '../middleware/auth.js';
+import { authOpcional, requiereAdmin, requiereAuth } from '../middleware/auth.js';
 import { asyncHandler, queryValidado, validarBody, validarQuery } from '../middleware/validate.js';
 import { construirDashboard } from '../lib/dashboard.js';
+import { notificarPedidoNuevo } from '../lib/notificaciones.js';
 
 const router = Router();
-
-router.use(requiereAuth);
 
 /**
  * Crea la orden. Reglas que se aplican acá y no se delegan al cliente:
@@ -37,10 +36,13 @@ router.use(requiereAuth);
  */
 router.post(
   '/',
+  authOpcional,
   validarBody(crearOrdenSchema),
   asyncHandler(async (req, res) => {
-    const userId = req.usuario!.id;
-    const { items, envio, metodoPago, notas } = req.body;
+    // Se puede comprar sin cuenta: `userId` queda nulo y el contacto del pedido
+    // son el nombre y el teléfono que vienen en la dirección de envío.
+    const userId = req.usuario?.id ?? null;
+    const { items, envio, metodoPago, notas, emailCliente } = req.body;
 
     // Falla temprano si el método no está habilitado, antes de tocar stock.
     const proveedor = proveedorDe(metodoPago);
@@ -94,6 +96,8 @@ router.post(
       const creada = await tx.order.create({
         data: {
           userId,
+          nombreCliente: envio.nombreCompleto,
+          emailCliente: normalizar(emailCliente),
           items: snapshot as unknown as Prisma.InputJsonValue,
           subtotal,
           costoEnvio,
@@ -109,8 +113,9 @@ router.post(
       });
 
       // El carrito se vacía junto con la orden: si algo falla, la transacción
-      // revierte y el cliente no se queda sin carrito y sin orden.
-      await tx.cartItem.deleteMany({ where: { cart: { userId } } });
+      // revierte y el cliente no se queda sin carrito y sin orden. El invitado
+      // no tiene carrito en la base; el suyo vive en el navegador.
+      if (userId) await tx.cartItem.deleteMany({ where: { cart: { userId } } });
 
       return creada;
     });
@@ -130,12 +135,47 @@ router.post(
         })
       : orden;
 
-    res.status(201).json(toOrdenDTO(actualizada));
+    const dto = toOrdenDTO(actualizada);
+
+    // El aviso no se espera: el cliente no tiene por qué mirar una pantalla de
+    // carga mientras hablamos con Meta, y si el aviso falla el pedido ya está
+    // guardado igual.
+    void notificarPedidoNuevo(dto);
+
+    res.status(201).json(dto);
+  }),
+);
+
+/**
+ * Seguimiento de un pedido de invitado: número más teléfono.
+ *
+ * No es un secreto criptográfico, pero adivinar los dos a la vez no es viable
+ * y no obliga al comprador a crearse una cuenta solo para ver su pedido.
+ */
+router.get(
+  '/seguimiento/:numero',
+  asyncHandler(async (req, res) => {
+    const telefono = String(req.query.telefono ?? '').replace(/\D/g, '');
+    const secuencia = Number(String(req.params.numero).replace(/\D/g, ''));
+
+    if (!telefono || !Number.isInteger(secuencia) || secuencia <= 0) {
+      throw notFound('No encontramos ese pedido');
+    }
+
+    const orden = await prisma.order.findUnique({ where: { secuencia } });
+    // Mismo mensaje si no existe o si el teléfono no coincide: distinguirlos
+    // permitiría averiguar qué números de pedido existen.
+    if (!orden || orden.telefonoContacto.replace(/\D/g, '') !== telefono) {
+      throw notFound('No encontramos ese pedido');
+    }
+
+    res.json(toOrdenDTO(orden));
   }),
 );
 
 router.get(
   '/',
+  requiereAuth,
   asyncHandler(async (req, res) => {
     const ordenes = await prisma.order.findMany({
       where: { userId: req.usuario!.id },
@@ -147,6 +187,7 @@ router.get(
 
 router.get(
   '/:id',
+  requiereAuth,
   asyncHandler(async (req, res) => {
     const orden = await prisma.order.findUnique({ where: { id: req.params.id } });
     if (!orden) throw notFound('Orden no encontrada');
@@ -161,6 +202,7 @@ router.get(
 /** Cancelar devuelve el stock. Solo se puede antes de que el pedido salga. */
 router.post(
   '/:id/cancelar',
+  requiereAuth,
   asyncHandler(async (req, res) => {
     const actualizada = await prisma.$transaction(async (tx) => {
       const orden = await tx.order.findUnique({ where: { id: req.params.id } });
@@ -193,6 +235,7 @@ router.post(
 
 router.get(
   '/admin/todas',
+  requiereAuth,
   requiereAdmin,
   asyncHandler(async (req, res) => {
     const estado = req.query.estado as Prisma.OrderWhereInput['estado'] | undefined;
@@ -207,6 +250,7 @@ router.get(
 
 router.patch(
   '/:id/estado',
+  requiereAuth,
   requiereAdmin,
   validarBody(actualizarEstadoOrdenSchema),
   asyncHandler(async (req, res) => {
@@ -229,6 +273,7 @@ const dashboardQuerySchema = z.object({
  */
 router.get(
   '/admin/dashboard',
+  requiereAuth,
   requiereAdmin,
   validarQuery(dashboardQuerySchema),
   asyncHandler(async (_req, res) => {
@@ -240,6 +285,7 @@ router.get(
 /** Resumen corto. Se mantiene por compatibilidad con la vista simple. */
 router.get(
   '/admin/resumen',
+  requiereAuth,
   requiereAdmin,
   asyncHandler(async (_req, res) => {
     const ahora = new Date();

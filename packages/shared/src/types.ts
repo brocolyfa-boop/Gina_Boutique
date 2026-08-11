@@ -135,6 +135,11 @@ export interface OrdenItemDTO {
 export interface OrdenDTO {
   id: string;
   numero: string;
+  /** Copiado en la orden; en una compra de invitado no hay cuenta que consultar. */
+  nombreCliente: string;
+  emailCliente: string | null;
+  /** true cuando se compró sin cuenta. */
+  esInvitado: boolean;
   items: OrdenItemDTO[];
   subtotal: number;
   costoEnvio: number;
@@ -146,12 +151,16 @@ export interface OrdenDTO {
   municipio: string;
   referencia: string | null;
   telefonoContacto: string;
+  /** Instrucciones del cliente. Van en el aviso: son para quien entrega. */
+  notas: string | null;
   entregaEstimadaDias: { min: number; max: number };
   pixelpayTransactionId: string | null;
   createdAt: string;
 }
 
 export interface ConfigPublicaDTO {
+  /** Número de WhatsApp de la tienda, o cadena vacía si no está configurado. */
+  whatsapp: string;
   /** Tarifa más barata. Sirve para el "desde L X" antes de conocer la dirección. */
   costoEnvioLps: number;
   tarifasEnvio: { tegucigalpa: number; nacional: number };

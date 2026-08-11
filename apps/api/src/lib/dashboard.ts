@@ -137,17 +137,21 @@ async function clientesDe(where: Prisma.OrderWhereInput): Promise<ClienteTop[]> 
   });
   if (grupos.length === 0) return [];
 
-  const usuarios = await prisma.user.findMany({
-    where: { id: { in: grupos.map((g) => g.userId) } },
-    select: { id: true, nombre: true, email: true },
-  });
+  // `userId` es nulo en las compras de invitado; todas caen en una sola fila.
+  const ids = grupos.map((g) => g.userId).filter((id): id is string => id !== null);
+  const usuarios = ids.length
+    ? await prisma.user.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, nombre: true, email: true },
+      })
+    : [];
   const porId = new Map(usuarios.map((u) => [u.id, u]));
 
   return grupos.map((g) => ({
-    id: g.userId,
+    id: g.userId ?? 'invitados',
     // Un usuario borrado deja sus órdenes atrás; no se pierde la venta.
-    nombre: porId.get(g.userId)?.nombre ?? 'Cuenta eliminada',
-    email: porId.get(g.userId)?.email ?? '',
+    nombre: g.userId === null ? 'Compras sin cuenta' : (porId.get(g.userId)?.nombre ?? 'Cuenta eliminada'),
+    email: g.userId === null ? '' : (porId.get(g.userId)?.email ?? ''),
     pedidos: g._count,
     ventas: redondear(num(g._sum.total)),
   }));

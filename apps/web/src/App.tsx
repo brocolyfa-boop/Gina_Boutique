@@ -12,6 +12,7 @@ const Carrito = lazy(() => import('./pages/Carrito'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Entrar = lazy(() => import('./pages/Entrar'));
 const MisPedidos = lazy(() => import('./pages/MisPedidos'));
+const Seguimiento = lazy(() => import('./pages/Seguimiento'));
 const Admin = lazy(() => import('./pages/Admin'));
 
 const Cargando = () => (
@@ -63,6 +64,14 @@ export default function App() {
           element={
             <Suspense fallback={<Cargando />}>
               <Entrar />
+            </Suspense>
+          }
+        />
+        <Route
+          path="seguimiento"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <Seguimiento />
             </Suspense>
           }
         />

@@ -160,4 +160,28 @@ export const MARCA = {
   },
 } as const;
 
+/* -------------------------------- WhatsApp -------------------------------- */
+
+/**
+ * Número de la tienda en formato internacional sin signos, como lo pide wa.me.
+ * Honduras es +504. El valor real llega del servidor (`ConfigPublicaDTO`); este
+ * queda como respaldo para que nada se rompa si la variable no está puesta.
+ */
+export const WHATSAPP_TIENDA_FALLBACK = '';
+
+/** Convierte "9999-8888" o "+504 9999 8888" en "50499998888". */
+export function normalizarWhatsApp(numero: string): string {
+  const digitos = numero.replace(/\D/g, '');
+  if (!digitos) return '';
+  // Ocho dígitos es un número hondureño sin el código de país.
+  return digitos.length === 8 ? `504${digitos}` : digitos;
+}
+
+/** Enlace de chat con el texto ya escrito. Devuelve null si no hay número. */
+export function enlaceWhatsApp(numero: string, mensaje: string): string | null {
+  const destino = normalizarWhatsApp(numero);
+  if (!destino) return null;
+  return `https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`;
+}
+
 export const PAGINACION = { limiteDefault: 24, limiteMax: 60 } as const;

@@ -140,7 +140,20 @@ export function CarritoProvider({ children }: { children: ReactNode }) {
     if (usuarioSincronizado.current === user.id) return;
     usuarioSincronizado.current = user.id;
 
-    let cancelado = false;
+    /*
+      El resultado se descarta solo si la sesión cambió mientras la petición
+      estaba en vuelo, y para eso se compara con `usuarioSincronizado`.
+
+      Antes se descartaba con un `cancelado` que la limpieza del efecto ponía en
+      true. Eso vaciaba el carrito de forma permanente: el efecto se vuelve a
+      ejecutar en cuanto cambia la identidad de `user` (la sesión se resuelve en
+      dos pasos), la limpieza cancelaba la carga en vuelo, y la segunda vuelta
+      salía por el `return` de la línea de arriba sin volver a pedir nada. El
+      cliente veía "no hay nada que pagar" con el carrito lleno.
+    */
+    const sesion = user.id;
+    const vigente = () => usuarioSincronizado.current === sesion;
+
     setCargando(true);
     (async () => {
       const pendientes = leerInvitado();
@@ -157,21 +170,17 @@ export function CarritoProvider({ children }: { children: ReactNode }) {
             body: { items },
           });
           localStorage.removeItem(CLAVE_INVITADO);
-          if (!cancelado) setCarrito(res);
+          if (vigente()) setCarrito(res);
         } else {
           const res = await api<CartDTO>('/carrito');
-          if (!cancelado) setCarrito(res);
+          if (vigente()) setCarrito(res);
         }
       } catch {
-        if (!cancelado) setCarrito(VACIO);
+        if (vigente()) setCarrito(VACIO);
       } finally {
-        if (!cancelado) setCargando(false);
+        if (vigente()) setCargando(false);
       }
     })();
-
-    return () => {
-      cancelado = true;
-    };
   }, [user, cargandoAuth]);
 
   const agregar = useCallback(

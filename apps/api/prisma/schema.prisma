@@ -196,8 +196,16 @@ model Order {
   /// (GB-000123) se arma a partir de aquí. Se delega a una secuencia de la base
   /// porque contar órdenes para numerar la siguiente se rompe con dos compras
   /// simultáneas.
-  secuencia Int    @unique @default(autoincrement())
-  userId    String @map("user_id")
+  secuencia Int     @unique @default(autoincrement())
+  /// Nulo en las compras de invitado: se puede comprar sin cuenta, y obligar a
+  /// registrarse antes de la primera compra bota a buena parte de la gente.
+  userId    String? @map("user_id")
+
+  /// Copiados en la orden y no leídos del usuario: un invitado no tiene cuenta
+  /// de dónde leerlos, y en una compra con cuenta el nombre pudo cambiar
+  /// después. La orden guarda a quién se le entregó ese día.
+  nombreCliente String  @map("nombre_cliente")
+  emailCliente  String? @map("email_cliente")
 
   /// Snapshot inmutable de lo comprado (nombre y precio del momento de la compra).
   items Json
@@ -221,7 +229,7 @@ model Order {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
   @@index([estado])

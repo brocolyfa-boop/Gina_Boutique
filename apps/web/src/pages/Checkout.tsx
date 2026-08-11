@@ -5,9 +5,11 @@ import type { ConfigPublicaDTO, MetodoPago, OrdenDTO } from '@gina/shared';
 import {
   DEPARTAMENTOS_HONDURAS,
   costoEnvioPara,
+  enlaceWhatsApp,
   entregaEstimada,
   formatLps,
   redondear,
+  resumenPedidoWhatsApp,
 } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../store/auth';
@@ -21,7 +23,7 @@ type ConfigConDetalle = ConfigPublicaDTO & {
 export default function Checkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { carrito, refrescar } = useCarrito();
+  const { carrito, refrescar, vaciar } = useCarrito();
 
   const [form, setForm] = useState({
     nombreCompleto: '',
@@ -31,6 +33,7 @@ export default function Checkout() {
     direccionCompleta: '',
     referencia: '',
     notas: '',
+    emailCliente: '',
   });
   const [metodoPago, setMetodoPago] = useState<MetodoPago | ''>('');
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +53,7 @@ export default function Checkout() {
       ...f,
       nombreCompleto: f.nombreCompleto || user.nombre,
       telefonoContacto: f.telefonoContacto || (user.telefono ?? ''),
+      emailCliente: f.emailCliente || user.email,
     }));
   }, [user]);
 
@@ -74,6 +78,11 @@ export default function Checkout() {
     ? costoEnvioPara(form.departamento, form.municipio, config.tarifasEnvio)
     : carrito.costoEnvio;
   const totalConEnvio = redondear(carrito.subtotal + envioCalculado);
+
+  // El texto lo arma el paquete compartido, el mismo que usa el aviso del
+  // servidor: así el mensaje del cliente y el nuestro dicen lo mismo.
+  const enlacePedidoWhatsApp =
+    orden && config?.whatsapp ? enlaceWhatsApp(config.whatsapp, resumenPedidoWhatsApp(orden)) : null;
 
   if (orden) {
     return (
@@ -122,14 +131,42 @@ export default function Checkout() {
           </p>
         </div>
 
-        <div className="mt-8 flex justify-center gap-4">
-          <Link to="/mis-pedidos" className="btn-principal">
-            Ver mis pedidos
-          </Link>
+        {enlacePedidoWhatsApp && (
+          <p className="mt-8 text-sm text-suave">
+            ¿Quieres confirmarlo de una vez?{' '}
+            <a
+              href={enlacePedidoWhatsApp}
+              target="_blank"
+              rel="noreferrer"
+              className="text-tinta underline"
+            >
+              Envíanos el pedido por WhatsApp
+            </a>
+            .
+          </p>
+        )}
+
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
+          {orden.esInvitado ? (
+            <Link to={`/seguimiento?numero=${orden.numero}`} className="btn-principal">
+              Seguir mi pedido
+            </Link>
+          ) : (
+            <Link to="/mis-pedidos" className="btn-principal">
+              Ver mis pedidos
+            </Link>
+          )}
           <Link to="/catalogo" className="btn-secundario">
             Seguir comprando
           </Link>
         </div>
+
+        {orden.esInvitado && (
+          <p className="mt-4 text-xs text-suave">
+            Guarda tu número de pedido: con él y tu teléfono puedes consultarlo cuando quieras,
+            sin necesidad de crear una cuenta.
+          </p>
+        )}
       </div>
     );
   }
@@ -142,20 +179,6 @@ export default function Checkout() {
         accion={
           <Link to="/catalogo" className="btn-principal">
             Ver catálogo
-          </Link>
-        }
-      />
-    );
-  }
-
-  if (!user) {
-    return (
-      <Vacio
-        titulo="Inicia sesión para continuar"
-        texto="Necesitamos tu cuenta para guardar el pedido y que puedas seguirlo. Tu carrito se conserva."
-        accion={
-          <Link to="/entrar?volver=/checkout" className="btn-principal">
-            Entrar o crear cuenta
           </Link>
         }
       />
@@ -189,9 +212,13 @@ export default function Checkout() {
           },
           metodoPago,
           ...(form.notas && { notas: form.notas }),
+          ...(form.emailCliente && { emailCliente: form.emailCliente }),
         },
       });
-      await refrescar();
+      // El invitado no tiene carrito en el servidor: el suyo vive en el
+      // navegador y hay que borrarlo aquí, o seguiría lleno tras comprar.
+      if (user) await refrescar();
+      else await vaciar();
       setOrden(creada);
       window.scrollTo({ top: 0 });
     } catch (err) {
@@ -211,6 +238,16 @@ export default function Checkout() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
       <h1 className="text-3xl">Finalizar compra</h1>
+
+      {!user && (
+        <p className="mt-3 text-sm text-suave">
+          No necesitas cuenta para comprar. Si ya tienes una,{' '}
+          <Link to="/entrar?volver=/checkout" className="text-tinta underline">
+            entra aquí
+          </Link>{' '}
+          y se llenan tus datos solos.
+        </p>
+      )}
 
       <form onSubmit={enviar} className="mt-8 grid gap-12 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-10">
@@ -283,6 +320,20 @@ export default function Checkout() {
                 />
                 {campo('direccionCompleta') && (
                   <span className="mt-1 block text-xs text-acento">{campo('direccionCompleta')}</span>
+                )}
+              </label>
+
+              <label className="sm:col-span-2">
+                <span className="etiqueta">Correo (opcional)</span>
+                <input
+                  type="email"
+                  placeholder="Para enviarte la confirmación"
+                  value={form.emailCliente}
+                  onChange={(e) => setForm({ ...form, emailCliente: e.target.value })}
+                  className="campo mt-2"
+                />
+                {detalles.emailCliente?.[0] && (
+                  <span className="mt-1 block text-xs text-acento">{detalles.emailCliente[0]}</span>
                 )}
               </label>
 

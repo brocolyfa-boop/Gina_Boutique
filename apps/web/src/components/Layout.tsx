@@ -5,6 +5,7 @@ import type { CategoriaDTO } from '@gina/shared';
 import { MARCA } from '@gina/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../store/auth';
+import BotonWhatsApp from './BotonWhatsApp';
 import { useCarrito } from '../store/carrito';
 
 interface Sugerencia {
@@ -194,6 +195,8 @@ export default function Layout() {
         <Outlet />
       </main>
 
+      <BotonWhatsApp />
+
       <footer className="mt-24 border-t border-borde bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
           <div>
@@ -222,8 +225,11 @@ export default function Layout() {
           <div>
             <p className="etiqueta">Pagos</p>
             <p className="mt-3 text-sm text-suave">
-              Pago contra entrega disponible en todo el país.
+              Pago contra entrega disponible en todo el país. No necesitas cuenta para comprar.
             </p>
+            <Link to="/seguimiento" className="mt-3 inline-block text-sm underline">
+              Seguir mi pedido
+            </Link>
           </div>
         </div>
         <div className="border-t border-borde py-6 text-center text-xs text-suave">

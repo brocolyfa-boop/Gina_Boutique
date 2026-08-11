@@ -4,6 +4,7 @@ import {
   MONEDA,
   TALLAS_CALZADO,
   TALLAS_ROPA,
+  normalizarWhatsApp,
   type ConfigPublicaDTO,
 } from '@gina/shared';
 import { env } from '../env.js';
@@ -22,6 +23,9 @@ router.get('/', (_req, res) => {
     metodosPagoDetalle: Array<{ metodo: string; etiqueta: string; descripcion: string }>;
   } = {
     costoEnvioLps: Math.min(env.tarifasEnvio.tegucigalpa, env.tarifasEnvio.nacional),
+    // Se normaliza aquí para que ni la web ni la app tengan que saber que wa.me
+    // quiere el número sin signos y con el código de país.
+    whatsapp: normalizarWhatsApp(env.TIENDA_WHATSAPP),
     tarifasEnvio: env.tarifasEnvio,
     moneda: MONEDA,
     pixelpayMode: env.PIXELPAY_MODE,

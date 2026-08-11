@@ -92,6 +92,9 @@ export function toOrdenDTO(o: Order): OrdenDTO {
   return {
     id: o.id,
     numero: numeroDeOrden(o.secuencia),
+    nombreCliente: o.nombreCliente,
+    emailCliente: o.emailCliente,
+    esInvitado: o.userId === null,
     items,
     subtotal: num(o.subtotal),
     costoEnvio: num(o.costoEnvio),
@@ -103,6 +106,7 @@ export function toOrdenDTO(o: Order): OrdenDTO {
     municipio: o.municipio,
     referencia: o.referencia,
     telefonoContacto: o.telefonoContacto,
+    notas: o.notas,
     entregaEstimadaDias: { min: diasMin, max: diasMax },
     pixelpayTransactionId: o.pixelpayTransactionId,
     createdAt: o.createdAt.toISOString(),

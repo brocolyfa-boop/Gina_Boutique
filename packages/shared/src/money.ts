@@ -70,3 +70,61 @@ export function calcularTotales(
   );
   return { subtotal, costoEnvio: redondear(costoEnvio), total: redondear(subtotal + costoEnvio) };
 }
+
+/* --------------------------- resumen para WhatsApp ------------------------- */
+
+interface LineaPedido {
+  nombre: string;
+  cantidad: number;
+  talla?: string | null;
+  color?: string | null;
+  precioUnitario: number;
+}
+
+interface PedidoResumible {
+  numero: string;
+  nombreCliente: string;
+  telefonoContacto: string;
+  departamento: string;
+  municipio: string;
+  direccionEnvio: string;
+  referencia?: string | null;
+  items: LineaPedido[];
+  subtotal: number;
+  costoEnvio: number;
+  total: number;
+  notas?: string | null;
+}
+
+/**
+ * Texto del pedido para WhatsApp.
+ *
+ * Vive en el paquete compartido porque lo usan dos lados: el aviso automático
+ * que manda el servidor y el botón "Enviar por WhatsApp" del cliente. Si cada
+ * uno armara su propio texto, terminarían diciendo cosas distintas del mismo
+ * pedido.
+ */
+export function resumenPedidoWhatsApp(o: PedidoResumible): string {
+  const lineas = o.items.map((i) => {
+    const variante = [i.talla, i.color].filter(Boolean).join(' / ');
+    return `• ${i.cantidad}x ${i.nombre}${variante ? ` (${variante})` : ''} — ${formatLps(
+      i.precioUnitario * i.cantidad,
+    )}`;
+  });
+
+  return [
+    `*Pedido ${o.numero}*`,
+    '',
+    `*Cliente:* ${o.nombreCliente}`,
+    `*Teléfono:* ${o.telefonoContacto}`,
+    `*Entrega:* ${o.direccionEnvio}, ${o.municipio}, ${o.departamento}`,
+    ...(o.referencia ? [`*Referencia:* ${o.referencia}`] : []),
+    '',
+    ...lineas,
+    '',
+    `Subtotal: ${formatLps(o.subtotal)}`,
+    `Envío: ${formatLps(o.costoEnvio)}`,
+    `*Total: ${formatLps(o.total)}*`,
+    ...(o.notas ? ['', `*Notas:* ${o.notas}`] : []),
+  ].join('\n');
+}
