@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   DEPARTAMENTOS_HONDURAS,
+  MARCA,
   MONEDA,
   TALLAS_CALZADO,
   TALLAS_ROPA,
@@ -25,7 +26,7 @@ router.get('/', (_req, res) => {
     costoEnvioLps: Math.min(env.tarifasEnvio.tegucigalpa, env.tarifasEnvio.nacional),
     // Se normaliza aquí para que ni la web ni la app tengan que saber que wa.me
     // quiere el número sin signos y con el código de país.
-    whatsapp: normalizarWhatsApp(env.TIENDA_WHATSAPP),
+    whatsapp: normalizarWhatsApp(env.TIENDA_WHATSAPP || MARCA.redes.whatsapp),
     tarifasEnvio: env.tarifasEnvio,
     moneda: MONEDA,
     pixelpayMode: env.PIXELPAY_MODE,

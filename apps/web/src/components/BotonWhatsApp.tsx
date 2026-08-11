@@ -20,9 +20,11 @@ export default function BotonWhatsApp() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const enlace = config?.whatsapp
-    ? enlaceWhatsApp(config.whatsapp, `Hola ${MARCA.nombre}, me interesa un producto.`)
-    : null;
+  // Si el servidor todavía no respondió (o no tiene la variable puesta) se usa
+  // el número de la marca: el botón debe estar desde el primer pintado, que es
+  // cuando el cliente está decidiendo si pregunta o se va.
+  const numero = config?.whatsapp || MARCA.redes.whatsapp;
+  const enlace = enlaceWhatsApp(numero, `Hola ${MARCA.nombre}, me interesa un producto.`);
   if (!enlace) return null;
 
   return (

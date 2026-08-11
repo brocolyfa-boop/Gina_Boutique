@@ -149,6 +149,19 @@ export const MARCA = {
     marcoPago: '#FFFFFF',
   },
   /**
+   * Redes y contacto de la tienda.
+   *
+   * El WhatsApp también llega por `TIENDA_WHATSAPP` desde el servidor; si esa
+   * variable está puesta, manda ella. Este valor es el que hace que el botón
+   * funcione sin depender de que alguien configure Railway.
+   */
+  redes: {
+    instagram: 'https://instagram.com/ginaboutique200',
+    /** Pendiente: falta el enlace real de la página. Vacío = no se muestra. */
+    facebook: '',
+    whatsapp: '8871-2141',
+  },
+  /**
    * Tipografía tomada del logo: serif de alto contraste para títulos, sans con
    * espaciado amplio en mayúsculas para etiquetas y el tagline.
    */
@@ -167,7 +180,7 @@ export const MARCA = {
  * Honduras es +504. El valor real llega del servidor (`ConfigPublicaDTO`); este
  * queda como respaldo para que nada se rompa si la variable no está puesta.
  */
-export const WHATSAPP_TIENDA_FALLBACK = '';
+export const WHATSAPP_TIENDA_FALLBACK = '8871-2141';
 
 /** Convierte "9999-8888" o "+504 9999 8888" en "50499998888". */
 export function normalizarWhatsApp(numero: string): string {

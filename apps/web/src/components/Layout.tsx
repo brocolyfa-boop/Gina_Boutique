@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { CategoriaDTO } from '@gina/shared';
-import { MARCA } from '@gina/shared';
+import { MARCA, enlaceWhatsApp } from '@gina/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../store/auth';
 import BotonWhatsApp from './BotonWhatsApp';
@@ -202,6 +202,50 @@ export default function Layout() {
           <div>
             <p className="font-display text-lg">{MARCA.nombre}</p>
             <p className="mt-2 text-sm text-suave">{MARCA.tagline}</p>
+
+            <ul className="mt-4 space-y-2 text-sm">
+              {MARCA.redes.instagram && (
+                <li>
+                  <a
+                    href={MARCA.redes.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-suave hover:text-tinta"
+                  >
+                    Instagram @ginaboutique200
+                  </a>
+                </li>
+              )}
+              {/* Facebook solo aparece cuando hay enlace: un botón que no lleva
+                  a la página correcta es peor que no tenerlo. */}
+              {MARCA.redes.facebook && (
+                <li>
+                  <a
+                    href={MARCA.redes.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-suave hover:text-tinta"
+                  >
+                    Facebook
+                  </a>
+                </li>
+              )}
+              <li>
+                <a
+                  href={
+                    enlaceWhatsApp(
+                      MARCA.redes.whatsapp,
+                      `Hola ${MARCA.nombre}, me interesa un producto.`,
+                    ) ?? '#'
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-suave hover:text-tinta"
+                >
+                  WhatsApp {MARCA.redes.whatsapp}
+                </a>
+              </li>
+            </ul>
           </div>
           <div>
             <p className="etiqueta">Categorías</p>
