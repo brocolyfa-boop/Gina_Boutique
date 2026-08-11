@@ -96,7 +96,6 @@ faltaba `PIXELPAY_API_KEY`.
 | `PIXELPAY_API_KEY`      | Credenciales de PixelPay.                                    |
 | `PIXELPAY_API_SECRET`   | Credenciales de PixelPay.                                    |
 | `PIXELPAY_MODE`         | `sandbox` o `production`.                                    |
-| `CLOUDINARY_URL`        | Subida de imágenes de producto (opcional en desarrollo).     |
 | `PORT`                  | Puerto HTTP. Railway lo inyecta solo.                        |
 | `COSTO_ENVIO_TEGUCIGALPA_LPS` | Envío dentro de Tegucigalpa. Ver nota abajo.           |
 | `COSTO_ENVIO_NACIONAL_LPS` | Envío al resto del país.                                  |
