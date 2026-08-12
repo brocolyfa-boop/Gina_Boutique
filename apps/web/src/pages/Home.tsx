@@ -49,16 +49,19 @@ function Promociones() {
 
   if (!data || data.length === 0) return null;
 
-  const imagenPromocion = (promo: PromocionDTO) => {
-    // La foto de campaña vive con la tienda para que no dependa de un servicio
-    // externo. Las imágenes de seed de placehold.co son solo texto de prueba y
-    // no deben mostrarse como fondo en producción.
-    if (promo.titulo === 'Temporada de Vestidos — 25% OFF') {
-      return '/images/promocion-vestido-rojo.png';
-    }
+  /*
+    El banner sale del campo `bannerImagen` que se sube desde el panel.
 
-    return promo.bannerImagen?.includes('placehold.co') ? null : promo.bannerImagen;
-  };
+    Antes había una foto guardada en el proyecto que se mostraba comparando el
+    título de la promoción con un texto escrito a mano: bastaba renombrarla para
+    que la imagen desapareciera sin aviso, y ninguna otra promoción podía tener
+    la suya. Ahora cada promoción trae la propia y sin foto queda el fondo en
+    tinta, que se ve bien igual.
+
+    Las de placehold.co se descartan porque son texto de relleno del seed.
+  */
+  const imagenPromocion = (promo: PromocionDTO) =>
+    promo.bannerImagen?.includes('placehold.co') ? null : promo.bannerImagen;
 
   return (
     <section className="mx-auto max-w-7xl px-4 lg:px-8">

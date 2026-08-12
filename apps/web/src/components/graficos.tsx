@@ -8,7 +8,7 @@
  * Paleta de la marca: tinta y vino con sus grises. La marca es blanca, así que
  * el color entra por los datos, no por el fondo.
  */
-export const PALETA = [
+const PALETA = [
   '#111111',
   '#B03052',
   '#6B6B6B',
@@ -193,23 +193,5 @@ export function BarraApilada({
         ))}
       </div>
     </li>
-  );
-}
-
-/** Leyenda compartida por los gráficos que usan la paleta por índice. */
-export function Leyenda({ etiquetas }: { etiquetas: string[] }) {
-  return (
-    <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-suave">
-      {etiquetas.map((e, i) => (
-        <li key={e} className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="h-2.5 w-2.5"
-            style={{ backgroundColor: colorSerie(i) }}
-          />
-          {e}
-        </li>
-      ))}
-    </ul>
   );
 }

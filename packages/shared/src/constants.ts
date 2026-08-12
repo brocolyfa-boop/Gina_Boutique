@@ -195,13 +195,6 @@ export const MARCA = {
 
 /* -------------------------------- WhatsApp -------------------------------- */
 
-/**
- * Número de la tienda en formato internacional sin signos, como lo pide wa.me.
- * Honduras es +504. El valor real llega del servidor (`ConfigPublicaDTO`); este
- * queda como respaldo para que nada se rompa si la variable no está puesta.
- */
-export const WHATSAPP_TIENDA_FALLBACK = '8871-2141';
-
 /** Convierte "9999-8888" o "+504 9999 8888" en "50499998888". */
 export function normalizarWhatsApp(numero: string): string {
   const digitos = numero.replace(/\D/g, '');

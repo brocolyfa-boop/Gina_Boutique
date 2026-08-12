@@ -52,15 +52,6 @@ export function precioFinal(
     : redondear(precio);
 }
 
-export function descuentoPorcentaje(
-  precio: number,
-  precioOferta?: number | null,
-  vigencia?: VigenciaOferta,
-  ahora: Date = new Date(),
-): number | null {
-  if (!ofertaVigente(precio, precioOferta, vigencia, ahora)) return null;
-  return Math.round(((precio - (precioOferta as number)) / precio) * 100);
-}
 
 /** Total de la orden: subtotal + envío fijo. El envío llega del backend. */
 export function calcularTotales(
