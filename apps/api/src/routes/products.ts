@@ -9,7 +9,7 @@ import {
   type ProductoDTO,
 } from '@gina/shared';
 import { prisma } from '../prisma.js';
-import { notFound } from '../lib/errors.js';
+import { conflict, notFound } from '../lib/errors.js';
 import { toProductoDTO } from '../lib/dto.js';
 import { promocionesVigentes } from '../lib/promociones.js';
 import { requiereAdmin, requiereAuth } from '../middleware/auth.js';
@@ -204,13 +204,43 @@ router.patch(
   }),
 );
 
-/** Baja lógica: las órdenes ya emitidas siguen apuntando al producto. */
+/**
+ * Borra el producto de verdad.
+ *
+ * Las líneas de carrito se van solas por la cascada del schema, y las órdenes
+ * conservan su snapshot, así que la venta histórica no se pierde: seguirá
+ * apareciendo en el total y en los más vendidos.
+ *
+ * Lo que sí se pierde es a qué categoría perteneció. El desglose por categoría
+ * resuelve el producto contra el catálogo vivo, y uno borrado cae en "Otras".
+ * Por eso, si ya se vendió, hace falta confirmarlo con `?forzar=true`: es una
+ * decisión que degrada los reportes y no debe tomarse por un clic distraído.
+ * Para sacarlo de la tienda sin perder nada está el interruptor de visible.
+ */
 router.delete(
   '/:id',
   requiereAuth,
   requiereAdmin,
   asyncHandler(async (req, res) => {
-    await prisma.product.update({ where: { id: req.params.id }, data: { activo: false } });
+    const producto = await prisma.product.findUnique({ where: { id: req.params.id } });
+    if (!producto) throw notFound('Producto no encontrado');
+
+    const filas = await prisma.$queryRaw<Array<{ pedidos: bigint }>>`
+      SELECT count(*) AS pedidos
+      FROM orders
+      WHERE items @> jsonb_build_array(jsonb_build_object('productoId', ${producto.id}))
+    `;
+    const vendido = Number(filas[0]?.pedidos ?? 0);
+
+    if (vendido > 0 && req.query.forzar !== 'true') {
+      throw conflict(
+        `"${producto.nombre}" ya se vendió en ${vendido} ${vendido === 1 ? 'pedido' : 'pedidos'}. ` +
+          'Si lo borras, esas ventas dejan de contarse en el desglose por categoría. ' +
+          'Lo recomendable es ocultarlo en vez de borrarlo.',
+      );
+    }
+
+    await prisma.product.delete({ where: { id: producto.id } });
     res.status(204).end();
   }),
 );

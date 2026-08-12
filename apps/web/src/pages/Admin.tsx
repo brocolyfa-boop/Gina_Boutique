@@ -3,9 +3,9 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CategoriaDTO, EstadoOrden, OrdenDTO, Paginado, ProductoDTO } from '@gina/shared';
 import { ESTADOS_ORDEN, enlaceWhatsApp, formatLps, mensajeEstadoWhatsApp } from '@gina/shared';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import { useAuth } from '../store/auth';
-import { Skeleton, Vacio } from '../components/ui';
+import { Aviso, Skeleton, Vacio } from '../components/ui';
 import FormularioProducto from '../components/FormularioProducto';
 import PanelVentas from '../components/PanelVentas';
 import AdminShell, { SECCIONES } from '../components/AdminShell';
@@ -152,6 +152,48 @@ function Productos() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin', 'productos'] }),
   });
 
+  const refrescarCatalogo = async () => {
+    await qc.invalidateQueries({ queryKey: ['admin', 'productos'] });
+    await qc.invalidateQueries({ queryKey: ['productos'] });
+  };
+
+  /**
+   * Borrar es definitivo, así que se pregunta dos veces y por cosas distintas.
+   *
+   * La primera confirmación es la de siempre. La segunda solo aparece si el
+   * producto ya se vendió: ahí el servidor responde 409 explicando que borrarlo
+   * degrada el desglose por categoría, y recién entonces se ofrece forzarlo.
+   * Casi siempre lo correcto en ese caso es ocultarlo, no borrarlo.
+   */
+  const [borrando, setBorrando] = useState<string | null>(null);
+  const [errorBorrar, setErrorBorrar] = useState<string | null>(null);
+
+  const eliminar = async (p: ProductoDTO) => {
+    setErrorBorrar(null);
+    if (!confirm(`¿Eliminar "${p.nombre}"? Esta acción no se puede deshacer.`)) return;
+
+    setBorrando(p.id);
+    try {
+      await api<void>(`/productos/${p.id}`, { method: 'DELETE' });
+      await refrescarCatalogo();
+    } catch (e) {
+      const vendido = e instanceof ApiError && e.code === 'CONFLICT';
+      if (!vendido) {
+        setErrorBorrar(e instanceof ApiError ? e.message : 'No se pudo eliminar el producto');
+        return;
+      }
+      if (!confirm(`${e.message}\n\n¿Borrarlo de todas formas?`)) return;
+      try {
+        await api<void>(`/productos/${p.id}?forzar=true`, { method: 'DELETE' });
+        await refrescarCatalogo();
+      } catch (e2) {
+        setErrorBorrar(e2 instanceof ApiError ? e2.message : 'No se pudo eliminar el producto');
+      }
+    } finally {
+      setBorrando(null);
+    }
+  };
+
   const guardar = async (payload: unknown) => {
     if (editando === 'nuevo') {
       await api<ProductoDTO>('/productos', { method: 'POST', body: payload });
@@ -189,6 +231,12 @@ function Productos() {
           Nuevo producto
         </button>
       </div>
+
+      {errorBorrar && (
+        <div className="mt-4 max-w-2xl">
+          <Aviso>{errorBorrar}</Aviso>
+        </div>
+      )}
 
       {data && data.data.length === 0 ? (
         <p className="mt-8 text-sm text-suave">
@@ -241,12 +289,19 @@ function Productos() {
                       {p.activo ? 'Activo' : 'Oculto'}
                     </button>
                   </td>
-                  <td className="py-3 text-right">
+                  <td className="space-x-4 whitespace-nowrap py-3 text-right">
                     <button
                       onClick={() => setEditando(p)}
                       className="text-[0.8125rem] hover:underline"
                     >
                       Editar
+                    </button>
+                    <button
+                      onClick={() => void eliminar(p)}
+                      disabled={borrando === p.id}
+                      className="text-[0.8125rem] text-acento hover:underline disabled:opacity-40"
+                    >
+                      {borrando === p.id ? 'Eliminando…' : 'Eliminar'}
                     </button>
                   </td>
                 </tr>
