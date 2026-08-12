@@ -9,6 +9,7 @@ import { Skeleton, Vacio } from '../components/ui';
 import FormularioProducto from '../components/FormularioProducto';
 import PanelVentas from '../components/PanelVentas';
 import AdminShell, { SECCIONES } from '../components/AdminShell';
+import LimiteDeError from '../components/LimiteDeError';
 import AdminCategorias from '../components/AdminCategorias';
 import AdminPromociones from '../components/AdminPromociones';
 import AdminClientes from '../components/AdminClientes';
@@ -288,12 +289,17 @@ export default function Admin() {
 
   return (
     <AdminShell>
+      {/* Un error en una sección no debe dejar el panel entero en blanco. La
+          `key` reinicia el límite al cambiar de sección, para que un fallo en
+          Productos no bloquee Pedidos. */}
+      <LimiteDeError key={seccion} donde={`la sección de ${seccion}`}>
       {seccion === 'resumen' && <PanelVentas />}
       {seccion === 'pedidos' && <Pedidos />}
       {seccion === 'productos' && <Productos />}
       {seccion === 'categorias' && <AdminCategorias />}
       {seccion === 'promociones' && <AdminPromociones />}
       {seccion === 'clientes' && <AdminClientes />}
+      </LimiteDeError>
     </AdminShell>
   );
 }

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
+import LimiteDeError from './components/LimiteDeError';
 import { AuthProvider } from './store/auth';
 import { CarritoProvider } from './store/carrito';
 import './index.css';
@@ -26,11 +27,15 @@ createRoot(raiz).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <CarritoProvider>
-            <App />
-          </CarritoProvider>
-        </AuthProvider>
+        {/* Último recinto: pase lo que pase, el cliente ve un mensaje y un
+            botón para recargar, nunca una pantalla en blanco. */}
+        <LimiteDeError donde="la tienda">
+          <AuthProvider>
+            <CarritoProvider>
+              <App />
+            </CarritoProvider>
+          </AuthProvider>
+        </LimiteDeError>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,
