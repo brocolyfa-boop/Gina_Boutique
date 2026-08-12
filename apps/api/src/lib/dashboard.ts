@@ -10,9 +10,9 @@ import type {
   VentaPorCategoria,
   VentaPorZona,
 } from '@gina/shared';
-import { precioFinal, redondear, type OrdenItemDTO } from '@gina/shared';
+import { redondear, type OrdenItemDTO } from '@gina/shared';
 import { prisma } from '../prisma.js';
-import { num, numOrNull } from './dto.js';
+import { num } from './dto.js';
 
 /**
  * Honduras es UTC-6. Sin esto, una venta de las 7 de la noche del lunes (que en
@@ -168,24 +168,33 @@ async function catalogoAhora(): Promise<ResumenCatalogo> {
     prisma.product.aggregate({ where: { activo: true }, _sum: { stock: true } }),
   ]);
 
-  // El valor del inventario necesita precio × stock por fila, que `aggregate`
-  // no sabe hacer; se traen las dos columnas y se multiplica aquí.
-  const filas = await prisma.product.findMany({
-    where: { activo: true },
-    select: { precio: true, precioOferta: true, stock: true, ofertaInicio: true, ofertaFin: true },
-  });
-  const valorInventario = redondear(
-    filas.reduce(
-      (t, f) =>
-        t +
-        precioFinal(num(f.precio), numOrNull(f.precioOferta), {
-          inicio: f.ofertaInicio,
-          fin: f.ofertaFin,
-        }) *
-          f.stock,
-      0,
-    ),
-  );
+  /*
+    El valor del inventario se suma en Postgres. Antes se traían todas las filas
+    del catálogo para multiplicar precio × stock en memoria: con veinte prendas
+    da igual, con cinco mil es traerse el catálogo entero cada vez que alguien
+    abre el tablero.
+
+    El CASE repite la regla de `ofertaVigente`: la oferta cuenta solo si es
+    menor al precio y estamos dentro de su ventana.
+  */
+  const filas = await prisma.$queryRaw<Array<{ total: Prisma.Decimal | null }>>`
+    SELECT SUM(
+      CASE
+        WHEN precio_oferta IS NOT NULL
+         AND precio_oferta > 0
+         AND precio_oferta < precio
+         AND (oferta_inicio IS NULL OR oferta_inicio <= now())
+         AND (oferta_fin    IS NULL OR oferta_fin    >= now())
+        THEN precio_oferta
+        ELSE precio
+      END * stock
+    ) AS total
+    FROM products
+    WHERE activo = true
+  `;
+  // Un catálogo vacío devuelve una fila con NULL, no cero filas; aun así se
+  // cubren los dos casos.
+  const valorInventario = redondear(num(filas[0]?.total ?? null));
 
   return {
     productos,
@@ -198,11 +207,18 @@ async function catalogoAhora(): Promise<ResumenCatalogo> {
   };
 }
 
-async function resumenDe(where: Prisma.OrderWhereInput): Promise<ResumenVentas> {
-  const [agg, ordenes] = await Promise.all([
-    prisma.order.aggregate({ where, _sum: { total: true }, _count: true }),
-    prisma.order.findMany({ where, select: { items: true } }),
-  ]);
+/**
+ * El llamador pasa las órdenes ya leídas.
+ *
+ * Antes esta función se las pedía a la base por su cuenta, y como el
+ * dashboard también las necesita para agrupar por categoría, la misma consulta
+ * —que trae el JSON de artículos de cada pedido— se hacía dos veces por carga.
+ */
+async function resumenDe(
+  where: Prisma.OrderWhereInput,
+  ordenes: Array<{ items: Prisma.JsonValue }>,
+): Promise<ResumenVentas> {
+  const agg = await prisma.order.aggregate({ where, _sum: { total: true }, _count: true });
   const ventas = redondear(num(agg._sum.total));
   const pedidos = agg._count;
   return {
@@ -233,10 +249,17 @@ export async function construirDashboard(
     createdAt: { gte: desdePrevio, lt: desde },
   };
 
-  const [resumen, resumenPrevio, porDep, porMun, ordenes, porEstado, stockBajo, serieCruda] =
+  // Las órdenes de los dos periodos se leen una sola vez y se reutilizan para
+  // el resumen, las unidades y el desglose por categoría.
+  const [ordenes, ordenesPrevias] = await Promise.all([
+    prisma.order.findMany({ where, select: { items: true } }),
+    prisma.order.findMany({ where: wherePrevio, select: { items: true } }),
+  ]);
+
+  const [resumen, resumenPrevio, porDep, porMun, porEstado, stockBajo, serieCruda] =
     await Promise.all([
-      resumenDe(where),
-      resumenDe(wherePrevio),
+      resumenDe(where, ordenes),
+      resumenDe(wherePrevio, ordenesPrevias),
       prisma.order.groupBy({
         by: ['departamento'],
         where,
@@ -249,7 +272,6 @@ export async function construirDashboard(
         _sum: { total: true },
         _count: true,
       }),
-      prisma.order.findMany({ where, select: { items: true } }),
       prisma.order.groupBy({
         by: ['estado'],
         where: { ...filtroZona, createdAt: { gte: desde, lte: hasta } },
@@ -261,10 +283,18 @@ export async function construirDashboard(
         orderBy: { stock: 'asc' },
         take: 12,
       }),
-      // El agrupado por día se hace en Postgres y en hora de Honduras: en UTC,
-      // una venta de la tarde caería en el día siguiente.
+      /*
+        Agrupado por día en hora de Honduras.
+
+        Los dos `AT TIME ZONE` son necesarios y el orden importa. `created_at`
+        es `timestamp without time zone` y guarda UTC, así que primero hay que
+        decirle a Postgres que ese valor ES UTC y recién entonces convertirlo a
+        Honduras. Con uno solo, Postgres interpreta el valor como si ya fuera
+        hora hondureña y suma seis horas en vez de restarlas: toda venta después
+        de las seis de la tarde se contaba en el día siguiente.
+      */
       prisma.$queryRaw<Array<{ dia: Date; ventas: Prisma.Decimal; pedidos: bigint }>>`
-        SELECT date_trunc('day', created_at AT TIME ZONE ${ZONA}) AS dia,
+        SELECT date_trunc('day', created_at AT TIME ZONE 'UTC' AT TIME ZONE ${ZONA}) AS dia,
                SUM(total) AS ventas,
                COUNT(*)   AS pedidos
         FROM orders
