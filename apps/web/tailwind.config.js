@@ -21,7 +21,9 @@ export default {
       },
       fontFamily: {
         display: ['"Playfair Display"', '"Cormorant Garamond"', 'Georgia', 'serif'],
-        sans: ['Inter', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
+        // Arial y Helvetica quedan explícitas en la cadena: si Inter no llega a
+        // cargar, el panel sigue viéndose en una sans neutra y no en la serif.
+        sans: ['Inter', 'Arial', '"Helvetica Neue"', 'Helvetica', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
         etiqueta: '0.18em',

@@ -224,7 +224,7 @@ export default function PanelVentas() {
       </button>
       <button
         onClick={() => void refetch()}
-        className="ml-auto text-xs uppercase tracking-etiqueta text-suave hover:text-tinta"
+        className="ml-auto text-[0.8125rem] text-suave hover:text-tinta"
       >
         {isFetching ? 'Actualizando…' : 'Actualizar'}
       </button>

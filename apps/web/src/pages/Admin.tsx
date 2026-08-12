@@ -39,7 +39,7 @@ function Pedidos() {
           <button
             key={e || 'todos'}
             onClick={() => setFiltro(e as EstadoOrden | '')}
-            className={`border px-3 py-1 text-xs uppercase tracking-etiqueta transition ${
+            className={`border px-3 py-1 text-[0.8125rem] capitalize transition ${
               filtro === e ? 'border-tinta bg-tinta text-white' : 'border-borde hover:border-tinta'
             }`}
           >
@@ -91,10 +91,10 @@ function Pedidos() {
                       onChange={(e) =>
                         cambiar.mutate({ id: o.id, estado: e.target.value as EstadoOrden })
                       }
-                      className="campo w-auto py-1 text-xs"
+                      className="campo w-auto py-1 text-xs capitalize"
                     >
                       {ESTADOS_ORDEN.map((e) => (
-                        <option key={e} value={e}>
+                        <option key={e} value={e} className="capitalize">
                           {e}
                         </option>
                       ))}
@@ -116,7 +116,7 @@ function Pedidos() {
                       }
                       target="_blank"
                       rel="noreferrer"
-                      className="whitespace-nowrap text-xs uppercase tracking-etiqueta text-verde hover:underline"
+                      className="whitespace-nowrap text-[0.8125rem] text-verde hover:underline"
                     >
                       Avisar
                     </a>
@@ -236,7 +236,7 @@ function Productos() {
                   <td className="py-3">
                     <button
                       onClick={() => alternar.mutate({ id: p.id, activo: !p.activo })}
-                      className="text-xs uppercase tracking-etiqueta hover:underline"
+                      className="text-[0.8125rem] hover:underline"
                     >
                       {p.activo ? 'Activo' : 'Oculto'}
                     </button>
@@ -244,7 +244,7 @@ function Productos() {
                   <td className="py-3 text-right">
                     <button
                       onClick={() => setEditando(p)}
-                      className="text-xs uppercase tracking-etiqueta hover:underline"
+                      className="text-[0.8125rem] hover:underline"
                     >
                       Editar
                     </button>

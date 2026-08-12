@@ -448,7 +448,7 @@ export default function FormularioProducto({
                   <li key={url} className="group relative border border-borde">
                     <img src={url} alt="" className="aspect-[4/5] w-full object-cover" />
                     {i === 0 && (
-                      <span className="absolute left-0 top-0 bg-tinta px-2 py-1 text-[10px] uppercase tracking-etiqueta text-white">
+                      <span className="absolute left-0 top-0 bg-tinta px-2 py-1 text-[11px] text-white">
                         Principal
                       </span>
                     )}
@@ -757,7 +757,7 @@ export default function FormularioProducto({
                 {hayOferta && (
                   <>
                     <span className="text-xs text-suave line-through">{formatLps(precioNum)}</span>
-                    <span className="bg-acento px-2 py-0.5 text-[10px] uppercase tracking-etiqueta text-white">
+                    <span className="bg-acento px-2 py-0.5 text-[11px] text-white">
                       -{descuento}%
                     </span>
                   </>

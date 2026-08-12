@@ -231,7 +231,7 @@ export default function AdminCategorias() {
                 <td className="space-x-4 py-3 text-right">
                   <button
                     onClick={() => abrir(c)}
-                    className="text-xs uppercase tracking-etiqueta hover:underline"
+                    className="text-[0.8125rem] hover:underline"
                   >
                     Editar
                   </button>
@@ -240,7 +240,7 @@ export default function AdminCategorias() {
                       setError(null);
                       if (confirm(`¿Eliminar la categoría "${c.nombre}"?`)) borrar.mutate(c.id);
                     }}
-                    className="text-xs uppercase tracking-etiqueta text-acento hover:underline"
+                    className="text-[0.8125rem] text-acento hover:underline"
                   >
                     Eliminar
                   </button>

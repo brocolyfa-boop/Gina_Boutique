@@ -326,7 +326,7 @@ export default function AdminPromociones() {
                     <td className="space-x-4 py-3 text-right">
                       <button
                         onClick={() => abrir(p)}
-                        className="text-xs uppercase tracking-etiqueta hover:underline"
+                        className="text-[0.8125rem] hover:underline"
                       >
                         Editar
                       </button>
@@ -334,7 +334,7 @@ export default function AdminPromociones() {
                         onClick={() => {
                           if (confirm(`¿Eliminar la promoción "${p.titulo}"?`)) borrar.mutate(p.id);
                         }}
-                        className="text-xs uppercase tracking-etiqueta text-acento hover:underline"
+                        className="text-[0.8125rem] text-acento hover:underline"
                       >
                         Eliminar
                       </button>

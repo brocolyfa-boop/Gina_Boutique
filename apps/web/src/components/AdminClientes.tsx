@@ -71,7 +71,7 @@ export default function AdminClientes() {
                     <span className="flex flex-wrap items-center gap-2">
                       {c.nombre}
                       {c.rol === 'admin' && (
-                        <span className="border border-borde px-2 py-0.5 text-[10px] uppercase tracking-etiqueta text-suave">
+                        <span className="border border-borde px-2 py-0.5 text-[11px] text-suave">
                           admin
                         </span>
                       )}

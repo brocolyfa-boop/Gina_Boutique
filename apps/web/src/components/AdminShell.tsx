@@ -24,14 +24,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-screen flex-col bg-fondo">
+    <div className="panel flex min-h-screen flex-col bg-fondo">
       <header className="sticky top-0 z-20 border-b border-borde bg-white">
         <div className="mx-auto flex max-w-[90rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:px-8">
           <Link to="/admin" className="flex shrink-0 items-center gap-3">
             <span className="whitespace-nowrap font-display text-lg leading-none">
               {MARCA.nombre}
             </span>
-            <span className="hidden border border-borde px-2 py-1 text-[10px] uppercase tracking-etiqueta text-suave sm:inline-block">
+            <span className="hidden border border-borde px-2 py-1 text-[11px] text-suave sm:inline-block">
               Panel
             </span>
           </Link>
@@ -50,7 +50,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 await salir();
                 navigate('/');
               }}
-              className="text-xs uppercase tracking-etiqueta text-suave hover:text-tinta"
+              className="text-[0.8125rem] text-suave hover:text-tinta"
             >
               Salir
             </button>
@@ -64,7 +64,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 key={s.clave}
                 to={`/admin/${s.clave}`}
                 className={({ isActive }) =>
-                  `-mb-px whitespace-nowrap border-b-2 py-3 text-xs uppercase tracking-etiqueta transition ${
+                  `-mb-px whitespace-nowrap border-b-2 py-3 text-[0.8125rem] transition ${
                     isActive ? 'border-tinta text-tinta' : 'border-transparent text-suave hover:text-tinta'
                   }`
                 }
