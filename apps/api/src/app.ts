@@ -16,6 +16,14 @@ import promotionRoutes from './routes/promotions.js';
 import uploadRoutes from './routes/uploads.js';
 import userRoutes from './routes/users.js';
 
+/**
+ * Primer origen permitido por CORS que parezca la web. Sirve de respaldo para
+ * no tener que configurar una variable más solo para la redirección.
+ */
+function primerOrigenWeb(): string {
+  return env.corsOrigins.find((o) => o.startsWith('https://')) ?? '';
+}
+
 export function crearApp() {
   const app = express();
 
@@ -42,6 +50,24 @@ export function crearApp() {
   if (!env.isProd) app.use(morgan('dev'));
 
   app.get('/health', (_req, res) => res.json({ ok: true, servicio: 'gina-boutique-api' }));
+
+  /*
+    La raíz de la API.
+
+    Este servicio y el de la web tienen direcciones parecidas en Railway, así que
+    tarde o temprano alguien escribe la de la API en el navegador buscando la
+    tienda. Antes se topaba con un JSON de error crudo, que parece que todo está
+    roto. Ahora se le manda a la tienda, y si no hay dirección configurada al
+    menos se le explica dónde está parado.
+  */
+  app.get('/', (_req, res) => {
+    const tienda = env.URL_TIENDA.trim() || primerOrigenWeb();
+    if (tienda) return res.redirect(302, tienda);
+    res.type('text/plain').send(
+      'Este es el servidor de Gina Boutique, no la tienda.\n' +
+        'La tienda está en otra dirección; pregúntale a quien administra el sitio.\n',
+    );
+  });
 
   app.use('/api/auth', authRoutes);
   app.use('/api/config', configRoutes);

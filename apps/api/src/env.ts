@@ -41,6 +41,8 @@ const envSchema = z.object({
   NOTIFICAR_EMAIL_DESDE: z.string().default('Gina Boutique <onboarding@resend.dev>'),
   /** Número público de la tienda, el del botón de WhatsApp de la web. */
   TIENDA_WHATSAPP: z.string().default(''),
+  /** Dirección de la tienda. Solo se usa para redirigir a quien llegue aquí. */
+  URL_TIENDA: z.string().default(''),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DIAS: z.coerce.number().int().positive().default(30),
 });
