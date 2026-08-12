@@ -226,6 +226,11 @@ model Order {
   metodoPago            MetodoPago  @map("metodo_pago")
   pixelpayTransactionId String?     @map("pixelpay_transaction_id")
 
+  /// Enlace de cobro generado en el banco para ESTE pedido, pegado a mano desde
+  /// el panel. No es una pasarela: la tienda no sabe si se pagó, solo entrega el
+  /// enlace al cliente. Cuando el dinero entra, el estado se cambia a mano.
+  enlacePago String? @map("enlace_pago")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

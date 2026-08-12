@@ -127,6 +127,7 @@ export function toOrdenDTO(o: Order): OrdenDTO {
     notas: o.notas,
     entregaEstimadaDias: { min: diasMin, max: diasMax },
     pixelpayTransactionId: o.pixelpayTransactionId,
+    enlacePago: o.enlacePago,
     createdAt: o.createdAt.toISOString(),
   };
 }

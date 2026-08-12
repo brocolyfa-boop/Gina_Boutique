@@ -211,3 +211,23 @@ export type CrearOrdenInput = z.infer<typeof crearOrdenSchema>;
 export const actualizarEstadoOrdenSchema = z.object({
   estado: z.enum(ESTADOS_ORDEN),
 });
+
+/**
+ * Enlace de cobro del pedido. Cadena vacía = quitarlo.
+ *
+ * Se exige https: un enlace de pago que viaja por http es exactamente lo que
+ * un atacante en la misma red sabría aprovechar, y ningún banco serio los
+ * emite así.
+ */
+export const enlacePagoSchema = z.object({
+  enlacePago: z
+    .union([
+      z.literal(''),
+      z
+        .string()
+        .trim()
+        .url('Eso no parece una dirección web')
+        .refine((u) => u.startsWith('https://'), 'El enlace debe empezar con https://'),
+    ])
+    .transform((v) => (v === '' ? null : v)),
+});

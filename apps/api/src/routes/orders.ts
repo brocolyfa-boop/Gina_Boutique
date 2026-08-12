@@ -5,6 +5,7 @@ import {
   PERIODOS_DASHBOARD,
   actualizarEstadoOrdenSchema,
   costoEnvioPara,
+  enlacePagoSchema,
   crearOrdenSchema,
   precioConPromociones,
   redondear,
@@ -259,6 +260,27 @@ router.get(
       take: 100,
     });
     res.json(ordenes.map(toOrdenDTO));
+  }),
+);
+
+/**
+ * Guarda (o quita) el enlace de cobro del pedido.
+ *
+ * Es un enlace generado a mano en la banca de la tienda, no una pasarela: la
+ * tienda no se entera de si el cliente pagó. Por eso el estado del pedido se
+ * sigue cambiando aparte, cuando el dinero aparece en la cuenta.
+ */
+router.patch(
+  '/:id/pago',
+  requiereAuth,
+  requiereAdmin,
+  validarBody(enlacePagoSchema),
+  asyncHandler(async (req, res) => {
+    const orden = await prisma.order.update({
+      where: { id: req.params.id },
+      data: { enlacePago: req.body.enlacePago },
+    });
+    res.json(toOrdenDTO(orden));
   }),
 );
 

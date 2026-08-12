@@ -13,11 +13,13 @@ import LimiteDeError from '../components/LimiteDeError';
 import AdminCategorias from '../components/AdminCategorias';
 import AdminPromociones from '../components/AdminPromociones';
 import AdminClientes from '../components/AdminClientes';
+import DialogoCobro from '../components/DialogoCobro';
 import { useTitulo } from '../lib/titulo';
 
 function Pedidos() {
   const qc = useQueryClient();
   const [filtro, setFiltro] = useState<EstadoOrden | ''>('');
+  const [cobrando, setCobrando] = useState<OrdenDTO | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'ordenes', filtro],
@@ -47,6 +49,12 @@ function Pedidos() {
           </button>
         ))}
       </div>
+
+      <DialogoCobro
+        orden={cobrando}
+        onCerrar={() => setCobrando(null)}
+        onGuardado={() => qc.invalidateQueries({ queryKey: ['admin', 'ordenes'] })}
+      />
 
       {isLoading ? (
         <Skeleton className="mt-6 h-40 w-full" />
@@ -100,7 +108,14 @@ function Pedidos() {
                       ))}
                     </select>
                   </td>
-                  <td className="py-3 text-right">
+                  <td className="space-x-4 whitespace-nowrap py-3 text-right">
+                    {/* El enlace de cobro del banco, y su envío al cliente. */}
+                    <button
+                      onClick={() => setCobrando(o)}
+                      className="text-[0.8125rem] hover:underline"
+                    >
+                      {o.enlacePago ? 'Cobro ✓' : 'Cobro'}
+                    </button>
                     {/*
                       Avisar al cliente en un clic. El mensaje va escrito según
                       el estado; solo hay que darle enviar. Mientras no haya

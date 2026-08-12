@@ -231,6 +231,19 @@ altera las órdenes de ayer.
 `contra_entrega`; el pago con tarjeta aparecerá en la lista automáticamente en
 cuanto haya credenciales configuradas.
 
+#### Enlace de cobro por pedido
+
+Mientras no haya pasarela, cada pedido admite un enlace de pago generado a mano
+en la banca de la tienda. Desde **Panel → Pedidos → Cobro** se pega el enlace y
+un botón se lo manda al cliente por WhatsApp con el resumen; el comprador
+también lo ve en **Seguir mi pedido**.
+
+Funciona con cualquier banco y sin contrato, pero la tienda **no se entera de si
+el cliente pagó**: cuando el dinero aparece en la cuenta hay que cambiar el
+estado del pedido a `pagado` a mano. El enlace se exige `https`, y desaparece
+del seguimiento en cuanto el pedido está pagado, entregado o cancelado, para no
+cobrar dos veces.
+
 No hay ninguna pasarela cableada, a propósito. `apps/api/src/lib/pagos.ts`
 define la interfaz `ProveedorPago`; para habilitar tarjeta se implementa esa
 interfaz y se registra en `PROVEEDORES`. Nada del carrito, las órdenes ni el

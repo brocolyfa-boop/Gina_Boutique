@@ -121,6 +121,26 @@ export default function Seguimiento() {
             Envío a {orden.municipio}, {orden.departamento}. Entrega estimada:{' '}
             {orden.entregaEstimadaDias.min} a {orden.entregaEstimadaDias.max} días hábiles.
           </p>
+
+          {/*
+            Si la tienda le generó un enlace de cobro, aquí lo tiene a mano sin
+            depender de encontrar el mensaje de WhatsApp. Se oculta cuando el
+            pedido ya está pagado o cancelado: cobrar dos veces es peor que no
+            mostrar el botón.
+          */}
+          {orden.enlacePago && !['pagado', 'entregado', 'cancelado'].includes(orden.estado) && (
+            <div className="mt-5 border-t border-borde pt-5">
+              <p className="text-sm">Tu pedido tiene un enlace de pago disponible.</p>
+              <a
+                href={orden.enlacePago}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-principal mt-3"
+              >
+                Pagar {formatLps(orden.total)}
+              </a>
+            </div>
+          )}
         </div>
       )}
 

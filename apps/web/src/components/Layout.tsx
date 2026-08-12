@@ -295,7 +295,8 @@ export default function Layout() {
           <div>
             <p className="etiqueta">Pagos</p>
             <p className="mt-3 text-sm text-suave">
-              Pago contra entrega disponible en todo el país. No necesitas cuenta para comprar.
+              Pago contra entrega en todo el país, o con enlace de pago del banco si prefieres
+              pagar antes. No necesitas cuenta para comprar.
             </p>
           </div>
         </div>

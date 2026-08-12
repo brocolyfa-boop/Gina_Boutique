@@ -155,6 +155,8 @@ export interface OrdenDTO {
   notas: string | null;
   entregaEstimadaDias: { min: number; max: number };
   pixelpayTransactionId: string | null;
+  /** Enlace de cobro del banco para este pedido, si se generó uno. */
+  enlacePago: string | null;
   createdAt: string;
 }
 

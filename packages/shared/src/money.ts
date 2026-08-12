@@ -228,3 +228,22 @@ export function descuentoTotalPorcentaje(
   if (producto.precio <= 0 || final >= producto.precio) return null;
   return Math.round(((producto.precio - final) / producto.precio) * 100);
 }
+
+/**
+ * Mensaje de cobro para el cliente, con el resumen del pedido y el enlace.
+ *
+ * Va junto al resto de textos de WhatsApp para que el cliente reciba siempre la
+ * misma información del mismo pedido, la mande quien la mande.
+ */
+export function mensajeCobroWhatsApp(o: PedidoResumible, enlace: string): string {
+  return [
+    `Hola ${o.nombreCliente.split(' ')[0]}, aquí está el enlace para pagar tu pedido ${o.numero}.`,
+    '',
+    `*Total a pagar: ${formatLps(o.total)}*`,
+    `(incluye ${formatLps(o.costoEnvio)} de envío)`,
+    '',
+    enlace,
+    '',
+    'Cuando completes el pago avísanos y lo despachamos.',
+  ].join('\n');
+}
