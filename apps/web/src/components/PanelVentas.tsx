@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { DashboardDTO, PeriodoDashboard, PuntoSerie, VentaPorZona } from '@gina/shared';
 import { DEPARTAMENTOS, PERIODOS_DASHBOARD, formatLps } from '@gina/shared';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import { Skeleton } from './ui';
 import { BarraApilada, Dona, Medidor, colorSerie } from './graficos';
 
@@ -168,7 +168,7 @@ export default function PanelVentas() {
   const [periodo, setPeriodo] = useState<PeriodoDashboard>('30d');
   const [departamento, setDepartamento] = useState('');
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['admin', 'dashboard', periodo, departamento],
     queryFn: () =>
       api<DashboardDTO>(
@@ -232,10 +232,19 @@ export default function PanelVentas() {
   );
 
   if (isError) {
+    // El mensaje real (no uno genérico) para no tener que adivinar dos veces:
+    // un 500 dice qué falló, un error de red dice que la API no respondió.
+    const detalle =
+      error instanceof ApiError
+        ? `${error.status} · ${error.message}`
+        : error instanceof Error
+          ? error.message
+          : 'Error desconocido';
     return (
       <div className="space-y-6">
         {filtros}
         <p className="text-sm text-acento">No se pudo cargar el reporte. Intenta de nuevo.</p>
+        <p className="text-xs text-suave">Detalle: {detalle}</p>
       </div>
     );
   }
