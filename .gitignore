@@ -13,3 +13,4 @@ coverage/
 *.apk
 *.aab
 apps/api/prisma/dev.db*
+*.tsbuildinfo
