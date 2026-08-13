@@ -12,6 +12,7 @@ const Carrito = lazy(() => import('./pages/Carrito'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Entrar = lazy(() => import('./pages/Entrar'));
 const MisPedidos = lazy(() => import('./pages/MisPedidos'));
+const MiCuenta = lazy(() => import('./pages/MiCuenta'));
 const Seguimiento = lazy(() => import('./pages/Seguimiento'));
 const Politicas = lazy(() => import('./pages/Politicas'));
 const NoEncontrada = lazy(() => import('./pages/NoEncontrada'));
@@ -90,6 +91,14 @@ export default function App() {
           element={
             <Suspense fallback={<Cargando />}>
               <MisPedidos />
+            </Suspense>
+          }
+        />
+        <Route
+          path="mi-cuenta"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <MiCuenta />
             </Suspense>
           }
         />

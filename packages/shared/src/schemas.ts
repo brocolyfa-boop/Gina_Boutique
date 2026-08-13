@@ -37,6 +37,11 @@ export const actualizarPerfilSchema = z.object({
   direccion: z.string().trim().max(300).optional(),
 });
 
+export const cambiarPasswordSchema = z.object({
+  actual: z.string().min(1, 'Ingresa tu contraseña actual'),
+  nueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+});
+
 /* -------------------------------- catálogo -------------------------------- */
 
 export const listarProductosQuerySchema = z.object({

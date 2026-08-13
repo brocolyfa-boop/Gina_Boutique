@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import {
   actualizarPerfilSchema,
+  cambiarPasswordSchema,
   loginSchema,
   refreshSchema,
   registroSchema,
@@ -123,6 +124,25 @@ router.patch(
   asyncHandler(async (req, res) => {
     const user = await prisma.user.update({ where: { id: req.usuario!.id }, data: req.body });
     res.json(toUserDTO(user));
+  }),
+);
+
+router.patch(
+  '/password',
+  requiereAuth,
+  validarBody(cambiarPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.usuario!.id } });
+    if (!user) throw notFound('Usuario no encontrado');
+
+    const actualOk = await bcrypt.compare(req.body.actual, user.passwordHash);
+    if (!actualOk) throw unauthorized('La contraseña actual no es correcta');
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await bcrypt.hash(req.body.nueva, 12) },
+    });
+    res.status(204).end();
   }),
 );
 

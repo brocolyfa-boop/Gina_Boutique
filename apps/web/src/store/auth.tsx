@@ -10,6 +10,8 @@ interface AuthCtx {
   login: (datos: LoginInput) => Promise<void>;
   registro: (datos: RegistroInput) => Promise<void>;
   salir: () => Promise<void>;
+  /** Reemplaza el usuario en memoria, p. ej. tras editar el perfil en Mi cuenta. */
+  actualizarUsuario: (user: UserDTO) => void;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login: (datos) => entrar('/auth/login', datos),
       registro: (datos) => entrar('/auth/registro', datos),
       salir,
+      actualizarUsuario: setUser,
     }),
     [user, cargando, entrar, salir],
   );

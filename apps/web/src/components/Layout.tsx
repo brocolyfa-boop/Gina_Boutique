@@ -149,7 +149,7 @@ export default function Layout() {
                   y el menú de cuenta.
                 */}
                 <Link
-                  to="/mis-pedidos"
+                  to="/mi-cuenta"
                   className="hidden max-w-[7rem] truncate hover:underline sm:inline-block"
                 >
                   {user.nombre.split(' ')[0]}
