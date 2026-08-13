@@ -5,6 +5,7 @@ import { formatLps } from '@gina/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { Skeleton, Vacio } from '../components/ui';
+import EstadoPedido from '../components/EstadoPedido';
 import { useTitulo } from '../lib/titulo';
 
 const COLOR_ESTADO: Record<EstadoOrden, string> = {
@@ -95,7 +96,11 @@ export default function MisPedidos() {
               </span>
             </div>
 
-            <ul className="mt-5 divide-y divide-borde border-y border-borde">
+            <div className="mt-5 border-y border-borde py-5">
+              <EstadoPedido estado={o.estado} entregaEstimadaDias={o.entregaEstimadaDias} />
+            </div>
+
+            <ul className="divide-y divide-borde border-b border-borde">
               {o.items.map((i, idx) => (
                 <li key={idx} className="flex items-center gap-3 py-3">
                   {i.imagen && <img src={i.imagen} alt="" loading="lazy" className="h-16 w-12 object-cover" />}

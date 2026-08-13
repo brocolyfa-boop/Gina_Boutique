@@ -6,6 +6,7 @@ import { MARCA, enlaceWhatsApp, formatLps } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { Aviso, Skeleton, Vacio } from '../components/ui';
+import EstadoPedido from '../components/EstadoPedido';
 import { useTitulo } from '../lib/titulo';
 
 /** Forma real de una dirección: la API la devuelve tal cual sale de Prisma. */
@@ -475,12 +476,14 @@ export default function MiCuenta() {
           ) : (
             <ul className="mt-4 divide-y divide-borde">
               {recientes.map((o) => (
-                <li key={o.id} className="flex items-center justify-between gap-4 py-3 text-sm">
-                  <div>
+                <li key={o.id} className="py-4">
+                  <div className="flex items-center justify-between gap-4 text-sm">
                     <p className="font-medium">{o.numero}</p>
-                    <p className="mt-1 text-xs text-suave">{o.estado.replace(/_/g, ' ')}</p>
+                    <p>{formatLps(o.total)}</p>
                   </div>
-                  <p>{formatLps(o.total)}</p>
+                  <div className="mt-3">
+                    <EstadoPedido estado={o.estado} entregaEstimadaDias={o.entregaEstimadaDias} />
+                  </div>
                 </li>
               ))}
             </ul>

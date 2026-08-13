@@ -4,6 +4,7 @@ import type { OrdenDTO } from '@gina/shared';
 import { formatLps } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { Aviso } from '../components/ui';
+import EstadoPedido from '../components/EstadoPedido';
 import { useTitulo } from '../lib/titulo';
 
 /**
@@ -86,6 +87,10 @@ export default function Seguimiento() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg">Pedido {orden.numero}</h2>
             <span className="etiqueta">{orden.estado.replace(/_/g, ' ')}</span>
+          </div>
+
+          <div className="mt-6 border-b border-borde pb-6">
+            <EstadoPedido estado={orden.estado} entregaEstimadaDias={orden.entregaEstimadaDias} />
           </div>
 
           <ul className="mt-5 divide-y divide-borde">
