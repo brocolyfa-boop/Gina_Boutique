@@ -2,12 +2,7 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "RAILPACK",
-    "buildCommand": "npm install --include=dev && npm run build -w @gina/shared && npm run build -w @gina/api",
-    "watchPatterns": [
-      "apps/api/**",
-      "packages/shared/**",
-      "package-lock.json"
-    ]
+    "buildCommand": "npm install --include=dev && npm run build -w @gina/shared && npm run build -w @gina/api"
   },
   "deploy": {
     "startCommand": "npm start -w @gina/api",

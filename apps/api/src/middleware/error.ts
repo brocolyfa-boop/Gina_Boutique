@@ -3,8 +3,21 @@ import { Prisma } from '@prisma/client';
 import { env } from '../env.js';
 import { AppError } from '../lib/errors.js';
 
+/**
+ * El mensaje incluye la versión del código que está sirviendo.
+ *
+ * Un 404 aquí casi nunca es una dirección mal escrita: es una API desplegada
+ * con código viejo, en la que esa ruta todavía no existía. Sin el commit en el
+ * mensaje, distinguir una cosa de la otra costó horas de ir y venir.
+ */
 export function notFoundHandler(_req: Request, res: Response): void {
-  res.status(404).json({ error: { message: 'Ruta no encontrada', code: 'NOT_FOUND' } });
+  const commit = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7);
+  res.status(404).json({
+    error: {
+      message: commit ? `Ruta no encontrada (api ${commit})` : 'Ruta no encontrada',
+      code: 'NOT_FOUND',
+    },
+  });
 }
 
 export function errorHandler(
