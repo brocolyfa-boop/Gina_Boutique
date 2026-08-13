@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ConfigPublicaDTO, MetodoPago, OrdenDTO } from '@gina/shared';
 import {
   DEPARTAMENTOS_HONDURAS,
+  TARIFAS_ENVIO_FALLBACK,
   costoEnvioPara,
   enlaceWhatsApp,
   entregaEstimada,
@@ -77,8 +78,12 @@ export default function Checkout() {
    * estimación que trae el carrito, marcada como tal.
    */
   const zonaCompleta = Boolean(form.departamento && form.municipio.trim());
-  const envioCalculado = zonaCompleta && config
-    ? costoEnvioPara(form.departamento, form.municipio, config.tarifasEnvio)
+  // Si el servidor respondió sin `tarifasEnvio` (una versión vieja cacheada, un
+  // hiccup de red que dejó `config` a medio llenar), se cae al valor real de la
+  // mensajería en vez de reventar la página a media compra.
+  const tarifasEnvio = config?.tarifasEnvio ?? TARIFAS_ENVIO_FALLBACK;
+  const envioCalculado = zonaCompleta
+    ? costoEnvioPara(form.departamento, form.municipio, tarifasEnvio)
     : carrito.costoEnvio;
   const totalConEnvio = redondear(carrito.subtotal + envioCalculado);
 
@@ -357,11 +362,11 @@ export default function Checkout() {
                 <strong className="text-tinta">
                   {entrega.diasMin} a {entrega.diasMax} días hábiles
                 </strong>
-                {zonaCompleta && config && (
+                {zonaCompleta && (
                   <>
                     {' · Envío '}
                     <strong className="text-tinta">{formatLps(envioCalculado)}</strong>
-                    {envioCalculado === config.tarifasEnvio.tegucigalpa
+                    {envioCalculado === tarifasEnvio.tegucigalpa
                       ? ' (dentro de Tegucigalpa)'
                       : ' (nacional)'}
                   </>
