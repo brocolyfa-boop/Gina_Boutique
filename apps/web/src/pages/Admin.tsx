@@ -79,7 +79,7 @@ function Pedidos() {
                   <td className="py-3">
                     <span className="font-medium">{o.numero}</span>
                     <span className="block text-xs text-suave">
-                      {o.nombreCliente} · {o.telefonoContacto}
+                      {o.nombreCliente || 'Cliente'} · {o.telefonoContacto}
                     </span>
                     <span className="block text-xs text-suave">
                       {o.items.length} {o.items.length === 1 ? 'artículo' : 'artículos'}

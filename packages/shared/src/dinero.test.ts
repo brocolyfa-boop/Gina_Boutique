@@ -23,6 +23,8 @@ import {
   redondear,
   normalizarWhatsApp,
   enlaceWhatsApp,
+  mensajeEstadoWhatsApp,
+  mensajeCobroWhatsApp,
   type PromocionAplicable,
 } from './index.js';
 
@@ -199,5 +201,30 @@ describe('WhatsApp', () => {
     const url = enlaceWhatsApp('8871-2141', 'Pedido #1 & talla M');
     assert.ok(url?.startsWith('https://wa.me/50488712141?text='));
     assert.ok(url?.includes('%26'));
+  });
+
+  const pedidoBase = {
+    numero: 'GB-000001',
+    telefonoContacto: '8871-2141',
+    departamento: 'Atlántida',
+    municipio: 'La Ceiba',
+    direccionEnvio: 'Barrio El Centro',
+    items: [],
+    subtotal: 100,
+    costoEnvio: 90,
+    total: 190,
+  };
+
+  it('no revienta si el pedido llega sin nombreCliente (API vieja todavía sin desplegar)', () => {
+    // TypeScript exige el campo, pero una API vieja puede no mandarlo: el
+    // mensaje debe verse feo, no tumbar el panel.
+    const pedido = { ...pedidoBase, nombreCliente: undefined as unknown as string };
+    assert.equal(mensajeEstadoWhatsApp(pedido, 'pendiente'), 'Hola, recibimos tu pedido GB-000001. Ya lo estamos preparando.');
+    assert.doesNotThrow(() => mensajeCobroWhatsApp(pedido, 'https://banco.example/pagar'));
+  });
+
+  it('usa el primer nombre cuando el pedido sí lo trae', () => {
+    const pedido = { ...pedidoBase, nombreCliente: 'Carlos Torres' };
+    assert.match(mensajeEstadoWhatsApp(pedido, 'pendiente'), /^Hola Carlos,/);
   });
 });

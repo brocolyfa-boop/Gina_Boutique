@@ -108,7 +108,7 @@ export function resumenPedidoWhatsApp(o: PedidoResumible): string {
   return [
     `*Pedido ${o.numero}*`,
     '',
-    `*Cliente:* ${o.nombreCliente}`,
+    `*Cliente:* ${o.nombreCliente || 'Cliente'}`,
     `*Teléfono:* ${o.telefonoContacto}`,
     `*Entrega:* ${o.direccionEnvio}, ${o.municipio}, ${o.departamento}`,
     ...(o.referencia ? [`*Referencia:* ${o.referencia}`] : []),
@@ -139,9 +139,21 @@ const MENSAJE_ESTADO: Record<string, (o: PedidoResumible) => string> = {
  * manda solo a propósito: mientras no haya credenciales de Meta, un botón que
  * abre la conversación es la forma más barata de que el cliente se entere.
  */
+/**
+ * Primer nombre del cliente, sin reventar si el pedido llegó sin ese dato.
+ *
+ * Puede pasar con una API vieja todavía sin desplegar (esta columna es nueva)
+ * o con un pedido huérfano; de cualquier forma, un saludo genérico es mejor
+ * que tumbar el panel entero por un pedido.
+ */
+function saludo(nombreCliente: string | null | undefined): string {
+  const nombre = nombreCliente?.trim().split(' ')[0];
+  return nombre ? `Hola ${nombre}` : 'Hola';
+}
+
 export function mensajeEstadoWhatsApp(o: PedidoResumible, estado: string): string {
   const base = MENSAJE_ESTADO[estado]?.(o) ?? `Novedades de tu pedido ${o.numero}.`;
-  return `Hola ${o.nombreCliente.split(' ')[0]}, ${base[0]?.toLowerCase()}${base.slice(1)}`;
+  return `${saludo(o.nombreCliente)}, ${base[0]?.toLowerCase()}${base.slice(1)}`;
 }
 
 /* -------------------------------- promociones ------------------------------ */
@@ -237,7 +249,7 @@ export function descuentoTotalPorcentaje(
  */
 export function mensajeCobroWhatsApp(o: PedidoResumible, enlace: string): string {
   return [
-    `Hola ${o.nombreCliente.split(' ')[0]}, aquí está el enlace para pagar tu pedido ${o.numero}.`,
+    `${saludo(o.nombreCliente)}, aquí está el enlace para pagar tu pedido ${o.numero}.`,
     '',
     `*Total a pagar: ${formatLps(o.total)}*`,
     `(incluye ${formatLps(o.costoEnvio)} de envío)`,
