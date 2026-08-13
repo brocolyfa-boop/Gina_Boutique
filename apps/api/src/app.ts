@@ -24,6 +24,9 @@ function primerOrigenWeb(): string {
   return env.corsOrigins.find((o) => o.startsWith('https://')) ?? '';
 }
 
+/** Momento en que arrancó este proceso: delata un despliegue que quedó viejo. */
+const arranque = new Date();
+
 export function crearApp() {
   const app = express();
 
@@ -50,6 +53,24 @@ export function crearApp() {
   if (!env.isProd) app.use(morgan('dev'));
 
   app.get('/health', (_req, res) => res.json({ ok: true, servicio: 'gina-boutique-api' }));
+
+  /*
+    Qué versión del código está viva.
+
+    Existe porque diagnosticar "el panel da 404" costó horas: la web estaba al
+    día y la API servía código de días atrás, y desde afuera no había forma de
+    saberlo. Railway inyecta estas variables en cada despliegue; con esto se
+    responde en un segundo abriendo la dirección en el navegador.
+  */
+  app.get('/version', (_req, res) => {
+    res.json({
+      commit: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? 'desconocido',
+      rama: process.env.RAILWAY_GIT_BRANCH ?? 'desconocida',
+      desplegado: process.env.RAILWAY_DEPLOYMENT_ID ?? 'local',
+      // Sirve de testigo: si esta ruta no existe, la API es anterior al 13 de agosto.
+      arrancado: arranque.toISOString(),
+    });
+  });
 
   /*
     La raíz de la API.
