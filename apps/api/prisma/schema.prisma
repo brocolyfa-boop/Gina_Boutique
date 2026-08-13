@@ -99,8 +99,32 @@ model Product {
   imagenes     String[] @default([])
   destacado    Boolean  @default(false)
   activo       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  /// Código interno de la tienda. Único cuando se usa; Postgres permite varios
+  /// NULL, así que los productos sin código no chocan entre sí.
+  sku        String? @unique
+  marca      String?
+  material   String?
+  tipoPrenda String? @map("tipo_prenda")
+
+  /// Medidas de la prenda en centímetros: { pecho, cintura, cadera, largo,
+  /// manga, tiro }. Va como Json porque cada tipo de prenda usa unas u otras y
+  /// una columna por medida dejaría la tabla llena de nulos.
+  medidas Json?
+
+  /// Datos para cotizar el envío.
+  pesoGramos Int?     @map("peso_gramos")
+  altoCm     Decimal? @map("alto_cm") @db.Decimal(6, 2)
+  anchoCm    Decimal? @map("ancho_cm") @db.Decimal(6, 2)
+  largoCm    Decimal? @map("largo_cm") @db.Decimal(6, 2)
+
+  /// Vigencia de la oferta. Con ambas en null, el precio de oferta aplica
+  /// siempre; con fechas, solo dentro de la ventana.
+  ofertaInicio DateTime? @map("oferta_inicio")
+  ofertaFin    DateTime? @map("oferta_fin")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   categoria  Category    @relation(fields: [categoriaId], references: [id])
   cartItems  CartItem[]
@@ -158,16 +182,30 @@ model CartItem {
   cart     Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   producto Product @relation(fields: [productoId], references: [id], onDelete: Cascade)
 
+  /// Ojo: Postgres considera dos NULL como distintos, así que esta restricción
+  /// NO impide duplicados cuando talla o color van vacíos (accesorios, bolsos).
+  /// Por eso la deduplicación real se hace en código antes de insertar.
   @@unique([cartId, productoId, talla, color])
   @@index([cartId])
   @@map("cart_items")
 }
 
 model Order {
-  id     String @id @default(cuid())
-  /// Número corto legible para el cliente, ej. GB-000123
-  numero String @unique
-  userId String @map("user_id")
+  id String @id @default(cuid())
+  /// Correlativo que Postgres asigna solo; el número legible que ve el cliente
+  /// (GB-000123) se arma a partir de aquí. Se delega a una secuencia de la base
+  /// porque contar órdenes para numerar la siguiente se rompe con dos compras
+  /// simultáneas.
+  secuencia Int     @unique @default(autoincrement())
+  /// Nulo en las compras de invitado: se puede comprar sin cuenta, y obligar a
+  /// registrarse antes de la primera compra bota a buena parte de la gente.
+  userId    String? @map("user_id")
+
+  /// Copiados en la orden y no leídos del usuario: un invitado no tiene cuenta
+  /// de dónde leerlos, y en una compra con cuenta el nombre pudo cambiar
+  /// después. La orden guarda a quién se le entregó ese día.
+  nombreCliente String  @map("nombre_cliente")
+  emailCliente  String? @map("email_cliente")
 
   /// Snapshot inmutable de lo comprado (nombre y precio del momento de la compra).
   items Json
@@ -188,10 +226,15 @@ model Order {
   metodoPago            MetodoPago  @map("metodo_pago")
   pixelpayTransactionId String?     @map("pixelpay_transaction_id")
 
+  /// Enlace de cobro generado en el banco para ESTE pedido, pegado a mano desde
+  /// el panel. No es una pasarela: la tienda no sabe si se pagó, solo entrega el
+  /// enlace al cliente. Cuando el dinero entra, el estado se cambia a mano.
+  enlacePago String? @map("enlace_pago")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
   @@index([estado])

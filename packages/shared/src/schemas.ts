@@ -37,6 +37,11 @@ export const actualizarPerfilSchema = z.object({
   direccion: z.string().trim().max(300).optional(),
 });
 
+export const cambiarPasswordSchema = z.object({
+  actual: z.string().min(1, 'Ingresa tu contraseña actual'),
+  nueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+});
+
 /* -------------------------------- catálogo -------------------------------- */
 
 export const listarProductosQuerySchema = z.object({
@@ -55,11 +60,23 @@ export const listarProductosQuerySchema = z.object({
 });
 export type ListarProductosQuery = z.infer<typeof listarProductosQuerySchema>;
 
-export const productoInputSchema = z.object({
+/** Medidas de la prenda en centímetros. Un valor de 0 no dice nada útil. */
+export const medidasPrendaSchema = z.object({
+  pecho: z.number().positive().max(300).optional(),
+  cintura: z.number().positive().max(300).optional(),
+  cadera: z.number().positive().max(300).optional(),
+  largo: z.number().positive().max(300).optional(),
+  manga: z.number().positive().max(300).optional(),
+  tiro: z.number().positive().max(300).optional(),
+});
+
+export const productoBaseSchema = z.object({
   nombre: z.string().trim().min(2).max(140),
   descripcion: z.string().trim().max(4000).default(''),
   precio: z.number().positive('El precio debe ser mayor a 0'),
   precioOferta: z.number().positive().nullable().optional(),
+  ofertaInicio: z.coerce.date().nullable().optional(),
+  ofertaFin: z.coerce.date().nullable().optional(),
   categoriaId: z.string().cuid(),
   subcategoria: z.string().trim().max(80).nullable().optional(),
   tallas: z.array(z.string().trim().min(1).max(10)).default([]),
@@ -68,10 +85,39 @@ export const productoInputSchema = z.object({
   imagenes: z.array(z.string().url()).default([]),
   destacado: z.boolean().default(false),
   activo: z.boolean().default(true),
-});
-export type ProductoInput = z.infer<typeof productoInputSchema>;
 
-export const productoUpdateSchema = productoInputSchema.partial();
+  sku: z.string().trim().max(60).nullable().optional(),
+  marca: z.string().trim().max(80).nullable().optional(),
+  material: z.string().trim().max(120).nullable().optional(),
+  tipoPrenda: z.string().trim().max(80).nullable().optional(),
+  medidas: medidasPrendaSchema.nullable().optional(),
+
+  pesoGramos: z.number().int().positive().max(100000).nullable().optional(),
+  altoCm: z.number().positive().max(500).nullable().optional(),
+  anchoCm: z.number().positive().max(500).nullable().optional(),
+  largoCm: z.number().positive().max(500).nullable().optional(),
+});
+
+/**
+ * Dos reglas que el formulario no debería poder saltarse: la oferta tiene que
+ * ser más barata que el precio, y su ventana tiene que ir hacia adelante.
+ */
+const reglasOferta = <T extends z.ZodTypeAny>(schema: T) =>
+  schema
+    .refine(
+      (p: z.infer<T>) =>
+        p.precioOferta == null || p.precio == null || p.precioOferta < p.precio,
+      { message: 'El precio de oferta debe ser menor al precio normal', path: ['precioOferta'] },
+    )
+    .refine(
+      (p: z.infer<T>) => !p.ofertaInicio || !p.ofertaFin || p.ofertaFin > p.ofertaInicio,
+      { message: 'La oferta debe terminar después de empezar', path: ['ofertaFin'] },
+    );
+
+export const productoInputSchema = reglasOferta(productoBaseSchema);
+export type ProductoInput = z.infer<typeof productoBaseSchema>;
+
+export const productoUpdateSchema = reglasOferta(productoBaseSchema.partial());
 
 export const categoriaInputSchema = z.object({
   nombre: z.string().trim().min(2).max(60),
@@ -151,6 +197,12 @@ export const addressInputSchema = direccionEnvioSchema.extend({
 export const crearOrdenSchema = z.object({
   items: z.array(cartItemSchema).min(1, 'El carrito está vacío'),
   envio: direccionEnvioSchema,
+  /**
+   * Solo para compras de invitado, y opcional incluso ahí: en Honduras mucha
+   * gente compra sin dar correo. El contacto obligatorio es el teléfono, que ya
+   * viene en `envio`.
+   */
+  emailCliente: z.string().trim().email('Correo inválido').optional().or(z.literal('')),
   metodoPago: z.enum(METODOS_PAGO),
   /**
    * Token de tarjeta generado en el cliente por el SDK de PixelPay.
@@ -163,4 +215,24 @@ export type CrearOrdenInput = z.infer<typeof crearOrdenSchema>;
 
 export const actualizarEstadoOrdenSchema = z.object({
   estado: z.enum(ESTADOS_ORDEN),
+});
+
+/**
+ * Enlace de cobro del pedido. Cadena vacía = quitarlo.
+ *
+ * Se exige https: un enlace de pago que viaja por http es exactamente lo que
+ * un atacante en la misma red sabría aprovechar, y ningún banco serio los
+ * emite así.
+ */
+export const enlacePagoSchema = z.object({
+  enlacePago: z
+    .union([
+      z.literal(''),
+      z
+        .string()
+        .trim()
+        .url('Eso no parece una dirección web')
+        .refine((u) => u.startsWith('https://'), 'El enlace debe empezar con https://'),
+    ])
+    .transform((v) => (v === '' ? null : v)),
 });

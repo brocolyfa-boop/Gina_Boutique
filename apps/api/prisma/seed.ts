@@ -280,6 +280,12 @@ async function main() {
   const en10Dias = new Date(ahora.getTime() + 10 * 24 * 60 * 60 * 1000);
   const en3Dias = new Date(ahora.getTime() + 3 * 24 * 60 * 60 * 1000);
 
+  /*
+    Nacen desactivadas. Antes las promociones eran decorativas y daba igual;
+    ahora descuentan de verdad, y una base recién sembrada no debe rebajar el
+    catálogo entero un 25% sin que nadie lo haya decidido. Se activan desde el
+    panel cuando se quieran probar.
+  */
   const promos = [
     {
       titulo: 'Temporada de Vestidos — 25% OFF',
@@ -291,7 +297,7 @@ async function main() {
       fechaInicio: ahora,
       fechaFin: en10Dias,
       bannerImagen: 'https://placehold.co/1600x600/FFFFFF/111111?text=25%25+OFF+Vestidos',
-      activo: true,
+      activo: false,
     },
     {
       titulo: 'L 100 de descuento en calzado',
@@ -306,7 +312,7 @@ async function main() {
       fechaInicio: ahora,
       fechaFin: en3Dias,
       bannerImagen: 'https://placehold.co/1600x600/111111/FFFFFF?text=L+100+OFF+Calzado',
-      activo: true,
+      activo: false,
     },
   ];
 

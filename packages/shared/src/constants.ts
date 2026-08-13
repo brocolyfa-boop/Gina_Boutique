@@ -1,36 +1,83 @@
-/**
- * Constantes compartidas entre api, web y mobile.
- *
- * Regla importante: el costo de envío NO vive aquí como número final. El backend
- * lo expone en `GET /api/config` leyéndolo de `COSTO_ENVIO_LPS`, para poder
- * cambiarlo sin republicar la app Android. Lo que sigue es solo el valor de
- * respaldo por si el cliente aún no ha podido leer la config.
- */
-export const COSTO_ENVIO_FALLBACK_LPS = 65;
-
+/** Constantes compartidas entre api, web y mobile. */
 export const MONEDA = 'HNL' as const;
 export const MONEDA_SIMBOLO = 'L' as const;
 
-/** Los 18 departamentos de Honduras, con el rango estimado de entrega en días. */
+/**
+ * Tarifas de envío de la mensajería, en lempiras. No viven aquí como verdad
+ * final: el backend las publica en `GET /api/config` leyéndolas del entorno,
+ * para poder cambiarlas sin republicar la app de Android. Esto es solo el
+ * respaldo por si el cliente aún no pudo leer la config.
+ */
+export const TARIFAS_ENVIO_FALLBACK = {
+  tegucigalpa: 90,
+  nacional: 120,
+} as const;
+
+export interface TarifasEnvio {
+  /** Entregas dentro de Tegucigalpa. */
+  tegucigalpa: number;
+  /** El resto del país. */
+  nacional: number;
+}
+
+/** Quita acentos y mayúsculas para comparar nombres escritos a mano. */
+const normalizarTexto = (v: string): string =>
+  v
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+/**
+ * La capital aparece escrita de varias formas y el cliente la teclea libremente.
+ * Todas estas cuentan como "dentro de Tegucigalpa" para la tarifa.
+ */
+const MUNICIPIOS_CAPITAL = ['tegucigalpa', 'distrito central', 'comayaguela', 'mdc', 'd.c.'];
+
+export function esTegucigalpa(departamento: string, municipio: string): boolean {
+  if (normalizarTexto(departamento) !== 'francisco morazan') return false;
+  const m = normalizarTexto(municipio);
+  return MUNICIPIOS_CAPITAL.some((c) => m === c || m.includes(c));
+}
+
+/**
+ * Cuánto cuesta enviar a una zona. La misma función la usan la web, la app y el
+ * servidor: si divergieran, el cliente vería un total y pagaría otro.
+ */
+export function costoEnvioPara(
+  departamento: string,
+  municipio: string,
+  tarifas: TarifasEnvio = TARIFAS_ENVIO_FALLBACK,
+): number {
+  return esTegucigalpa(departamento, municipio) ? tarifas.tegucigalpa : tarifas.nacional;
+}
+
+/**
+ * Los 18 departamentos de Honduras con su rango de entrega en días.
+ *
+ * La mensajería entrega en 1 a 2 días en todo el país, así que hoy el rango es
+ * igual en todos. Se mantiene por departamento porque es lo primero que va a
+ * cambiar cuando se sumen zonas lejanas o una segunda mensajería.
+ */
 export const DEPARTAMENTOS_HONDURAS = [
-  { nombre: 'Atlántida', diasMin: 2, diasMax: 4 },
-  { nombre: 'Choluteca', diasMin: 2, diasMax: 5 },
-  { nombre: 'Colón', diasMin: 3, diasMax: 6 },
-  { nombre: 'Comayagua', diasMin: 1, diasMax: 3 },
-  { nombre: 'Copán', diasMin: 3, diasMax: 5 },
-  { nombre: 'Cortés', diasMin: 1, diasMax: 3 },
-  { nombre: 'El Paraíso', diasMin: 2, diasMax: 4 },
+  { nombre: 'Atlántida', diasMin: 1, diasMax: 2 },
+  { nombre: 'Choluteca', diasMin: 1, diasMax: 2 },
+  { nombre: 'Colón', diasMin: 1, diasMax: 2 },
+  { nombre: 'Comayagua', diasMin: 1, diasMax: 2 },
+  { nombre: 'Copán', diasMin: 1, diasMax: 2 },
+  { nombre: 'Cortés', diasMin: 1, diasMax: 2 },
+  { nombre: 'El Paraíso', diasMin: 1, diasMax: 2 },
   { nombre: 'Francisco Morazán', diasMin: 1, diasMax: 2 },
-  { nombre: 'Gracias a Dios', diasMin: 5, diasMax: 10 },
-  { nombre: 'Intibucá', diasMin: 3, diasMax: 5 },
-  { nombre: 'Islas de la Bahía', diasMin: 4, diasMax: 7 },
-  { nombre: 'La Paz', diasMin: 2, diasMax: 4 },
-  { nombre: 'Lempira', diasMin: 3, diasMax: 6 },
-  { nombre: 'Ocotepeque', diasMin: 3, diasMax: 6 },
-  { nombre: 'Olancho', diasMin: 3, diasMax: 5 },
-  { nombre: 'Santa Bárbara', diasMin: 2, diasMax: 4 },
-  { nombre: 'Valle', diasMin: 2, diasMax: 5 },
-  { nombre: 'Yoro', diasMin: 2, diasMax: 4 },
+  { nombre: 'Gracias a Dios', diasMin: 1, diasMax: 2 },
+  { nombre: 'Intibucá', diasMin: 1, diasMax: 2 },
+  { nombre: 'Islas de la Bahía', diasMin: 1, diasMax: 2 },
+  { nombre: 'La Paz', diasMin: 1, diasMax: 2 },
+  { nombre: 'Lempira', diasMin: 1, diasMax: 2 },
+  { nombre: 'Ocotepeque', diasMin: 1, diasMax: 2 },
+  { nombre: 'Olancho', diasMin: 1, diasMax: 2 },
+  { nombre: 'Santa Bárbara', diasMin: 1, diasMax: 2 },
+  { nombre: 'Valle', diasMin: 1, diasMax: 2 },
+  { nombre: 'Yoro', diasMin: 1, diasMax: 2 },
 ] as const;
 
 export const DEPARTAMENTOS = DEPARTAMENTOS_HONDURAS.map((d) => d.nombre);
@@ -39,10 +86,26 @@ export type Departamento = (typeof DEPARTAMENTOS_HONDURAS)[number]['nombre'];
 
 export function entregaEstimada(departamento: string): { diasMin: number; diasMax: number } {
   const dep = DEPARTAMENTOS_HONDURAS.find((d) => d.nombre === departamento);
-  return dep ? { diasMin: dep.diasMin, diasMax: dep.diasMax } : { diasMin: 3, diasMax: 7 };
+  return dep ? { diasMin: dep.diasMin, diasMax: dep.diasMax } : { diasMin: 1, diasMax: 2 };
 }
 
 export const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
+
+/**
+ * Tabla de tallas de mujer, en centímetros y medidas de cuerpo (no de prenda).
+ *
+ * Vive aquí y no en la web porque la app de Android tiene que enseñar
+ * exactamente la misma; dos tablas distintas para la misma tienda es cómo se
+ * generan los cambios por talla que nadie quería.
+ */
+export const TABLA_TALLAS_MUJER = [
+  { talla: 'XS', busto: '78 – 82', cintura: '60 – 64', cadera: '86 – 90' },
+  { talla: 'S', busto: '83 – 87', cintura: '65 – 69', cadera: '91 – 95' },
+  { talla: 'M', busto: '88 – 93', cintura: '70 – 75', cadera: '96 – 101' },
+  { talla: 'L', busto: '94 – 99', cintura: '76 – 81', cadera: '102 – 107' },
+  { talla: 'XL', busto: '100 – 106', cintura: '82 – 88', cadera: '108 – 114' },
+  { talla: 'XXL', busto: '107 – 113', cintura: '89 – 95', cadera: '115 – 121' },
+] as const;
 export const TALLAS_CALZADO = ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44'] as const;
 
 export const ESTADOS_ORDEN = [
@@ -75,10 +138,18 @@ export const MARCA = {
   nombre: 'Gina Boutique',
   tagline: 'Descubre la moda que te hace brillar',
   /**
-   * Monograma "GR" en negro sobre blanco. Placeholder hasta que el archivo esté
-   * subido a Cloudinary; al reemplazar esta URL, web y mobile lo toman de aquí.
+   * Monograma "GR" en negro sobre blanco, servido por la propia web
+   * (`apps/web/public/logo.svg`). No es una imagen externa a propósito: un
+   * logotipo que depende de otro servicio es lo primero que se ve fallar.
+   *
+   * Cuando exista el archivo definitivo, se sube a Cloudinary y se cambia esta
+   * línea; web y mobile lo toman de aquí.
+   *
+   * El logo original incluye el texto "GR VARIEDADES", pero el nombre de la
+   * tienda es Gina Boutique: el monograma se usa como imagen de marca (header,
+   * favicon) y el nombre va aparte, en texto. No mezclar los dos rótulos.
    */
-  logoUrl: 'https://placehold.co/320x320/FFFFFF/111111?text=GR',
+  logoUrl: '/logo.svg',
   colores: {
     /** Color principal de marca: blanco. Es el lienzo, no la tinta. */
     primary: '#FFFFFF',
@@ -98,6 +169,19 @@ export const MARCA = {
     marcoPago: '#FFFFFF',
   },
   /**
+   * Redes y contacto de la tienda.
+   *
+   * El WhatsApp también llega por `TIENDA_WHATSAPP` desde el servidor; si esa
+   * variable está puesta, manda ella. Este valor es el que hace que el botón
+   * funcione sin depender de que alguien configure Railway.
+   */
+  redes: {
+    instagram: 'https://instagram.com/ginaboutique200',
+    /** Pendiente: falta el enlace real de la página. Vacío = no se muestra. */
+    facebook: '',
+    whatsapp: '8871-2141',
+  },
+  /**
    * Tipografía tomada del logo: serif de alto contraste para títulos, sans con
    * espaciado amplio en mayúsculas para etiquetas y el tagline.
    */
@@ -108,5 +192,22 @@ export const MARCA = {
     trackingEtiqueta: '0.18em',
   },
 } as const;
+
+/* -------------------------------- WhatsApp -------------------------------- */
+
+/** Convierte "9999-8888" o "+504 9999 8888" en "50499998888". */
+export function normalizarWhatsApp(numero: string): string {
+  const digitos = numero.replace(/\D/g, '');
+  if (!digitos) return '';
+  // Ocho dígitos es un número hondureño sin el código de país.
+  return digitos.length === 8 ? `504${digitos}` : digitos;
+}
+
+/** Enlace de chat con el texto ya escrito. Devuelve null si no hay número. */
+export function enlaceWhatsApp(numero: string, mensaje: string): string | null {
+  const destino = normalizarWhatsApp(numero);
+  if (!destino) return null;
+  return `https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`;
+}
 
 export const PAGINACION = { limiteDefault: 24, limiteMax: 60 } as const;

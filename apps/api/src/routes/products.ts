@@ -9,8 +9,9 @@ import {
   type ProductoDTO,
 } from '@gina/shared';
 import { prisma } from '../prisma.js';
-import { notFound } from '../lib/errors.js';
+import { conflict, notFound } from '../lib/errors.js';
 import { toProductoDTO } from '../lib/dto.js';
+import { promocionesVigentes } from '../lib/promociones.js';
 import { requiereAdmin, requiereAuth } from '../middleware/auth.js';
 import { asyncHandler, queryValidado, validarBody, validarQuery } from '../middleware/validate.js';
 
@@ -46,7 +47,16 @@ router.get(
     if (q.talla) where.tallas = { has: q.talla };
     if (q.color) where.colores = { has: q.color };
     if (q.destacado) where.destacado = true;
-    if (q.enOferta) where.precioOferta = { not: null };
+    if (q.enOferta) {
+      // "En oferta" es tener precio rebajado Y estar dentro de la ventana. Sin
+      // las fechas, el catálogo seguiría anunciando ofertas ya vencidas.
+      const ahora = new Date();
+      where.precioOferta = { not: null };
+      where.AND = [
+        { OR: [{ ofertaInicio: null }, { ofertaInicio: { lte: ahora } }] },
+        { OR: [{ ofertaFin: null }, { ofertaFin: { gte: ahora } }] },
+      ];
+    }
     if (q.precioMin != null || q.precioMax != null) {
       where.precio = {
         ...(q.precioMin != null && { gte: q.precioMin }),
@@ -54,7 +64,7 @@ router.get(
       };
     }
 
-    const [total, productos] = await Promise.all([
+    const [total, productos, promos] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
@@ -63,11 +73,12 @@ router.get(
         skip: (q.page - 1) * q.limit,
         take: q.limit,
       }),
+      promocionesVigentes(),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / q.limit));
     const respuesta: Paginado<ProductoDTO> = {
-      data: productos.map(toProductoDTO),
+      data: productos.map((p) => toProductoDTO(p, promos)),
       page: q.page,
       limit: q.limit,
       total,
@@ -109,16 +120,19 @@ router.get(
     if (!producto) throw notFound('Producto no encontrado');
 
     // Relacionados de la misma categoría, para la ficha de producto.
-    const relacionados = await prisma.product.findMany({
-      where: { categoriaId: producto.categoriaId, activo: true, id: { not: producto.id } },
-      include: { categoria: true },
-      take: 8,
-      orderBy: { createdAt: 'desc' },
-    });
+    const [relacionados, promos] = await Promise.all([
+      prisma.product.findMany({
+        where: { categoriaId: producto.categoriaId, activo: true, id: { not: producto.id } },
+        include: { categoria: true },
+        take: 8,
+        orderBy: { createdAt: 'desc' },
+      }),
+      promocionesVigentes(),
+    ]);
 
     res.json({
-      ...toProductoDTO(producto),
-      relacionados: relacionados.map(toProductoDTO),
+      ...toProductoDTO(producto, promos),
+      relacionados: relacionados.map((r) => toProductoDTO(r, promos)),
     });
   }),
 );
@@ -137,7 +151,7 @@ router.get(
       ? { nombre: { contains: q.q, mode: 'insensitive' } }
       : {};
 
-    const [total, productos] = await Promise.all([
+    const [total, productos, promos] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
@@ -146,11 +160,12 @@ router.get(
         skip: (q.page - 1) * q.limit,
         take: q.limit,
       }),
+      promocionesVigentes(),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / q.limit));
     res.json({
-      data: productos.map(toProductoDTO),
+      data: productos.map((p) => toProductoDTO(p, promos)),
       page: q.page,
       limit: q.limit,
       total,
@@ -170,7 +185,7 @@ router.post(
       data: req.body,
       include: { categoria: true },
     });
-    res.status(201).json(toProductoDTO(producto));
+    res.status(201).json(toProductoDTO(producto, await promocionesVigentes()));
   }),
 );
 
@@ -185,17 +200,47 @@ router.patch(
       data: req.body,
       include: { categoria: true },
     });
-    res.json(toProductoDTO(producto));
+    res.json(toProductoDTO(producto, await promocionesVigentes()));
   }),
 );
 
-/** Baja lógica: las órdenes ya emitidas siguen apuntando al producto. */
+/**
+ * Borra el producto de verdad.
+ *
+ * Las líneas de carrito se van solas por la cascada del schema, y las órdenes
+ * conservan su snapshot, así que la venta histórica no se pierde: seguirá
+ * apareciendo en el total y en los más vendidos.
+ *
+ * Lo que sí se pierde es a qué categoría perteneció. El desglose por categoría
+ * resuelve el producto contra el catálogo vivo, y uno borrado cae en "Otras".
+ * Por eso, si ya se vendió, hace falta confirmarlo con `?forzar=true`: es una
+ * decisión que degrada los reportes y no debe tomarse por un clic distraído.
+ * Para sacarlo de la tienda sin perder nada está el interruptor de visible.
+ */
 router.delete(
   '/:id',
   requiereAuth,
   requiereAdmin,
   asyncHandler(async (req, res) => {
-    await prisma.product.update({ where: { id: req.params.id }, data: { activo: false } });
+    const producto = await prisma.product.findUnique({ where: { id: req.params.id } });
+    if (!producto) throw notFound('Producto no encontrado');
+
+    const filas = await prisma.$queryRaw<Array<{ pedidos: bigint }>>`
+      SELECT count(*) AS pedidos
+      FROM orders
+      WHERE items @> jsonb_build_array(jsonb_build_object('productoId', ${producto.id}))
+    `;
+    const vendido = Number(filas[0]?.pedidos ?? 0);
+
+    if (vendido > 0 && req.query.forzar !== 'true') {
+      throw conflict(
+        `"${producto.nombre}" ya se vendió en ${vendido} ${vendido === 1 ? 'pedido' : 'pedidos'}. ` +
+          'Si lo borras, esas ventas dejan de contarse en el desglose por categoría. ' +
+          'Lo recomendable es ocultarlo en vez de borrarlo.',
+      );
+    }
+
+    await prisma.product.delete({ where: { id: producto.id } });
     res.status(204).end();
   }),
 );

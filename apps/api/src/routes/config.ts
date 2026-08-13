@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import {
   DEPARTAMENTOS_HONDURAS,
-  METODOS_PAGO,
+  MARCA,
   MONEDA,
   TALLAS_CALZADO,
   TALLAS_ROPA,
+  normalizarWhatsApp,
   type ConfigPublicaDTO,
 } from '@gina/shared';
 import { env } from '../env.js';
+import { metodosDisponibles } from '../lib/pagos.js';
 
 const router = Router();
 
@@ -17,11 +19,26 @@ const router = Router();
  * la app de Android ni tocar el bundle de la web.
  */
 router.get('/', (_req, res) => {
-  const config: ConfigPublicaDTO = {
-    costoEnvioLps: env.COSTO_ENVIO_LPS,
+  const disponibles = metodosDisponibles();
+  const config: ConfigPublicaDTO & {
+    metodosPagoDetalle: Array<{ metodo: string; etiqueta: string; descripcion: string }>;
+  } = {
+    costoEnvioLps: Math.min(env.tarifasEnvio.tegucigalpa, env.tarifasEnvio.nacional),
+    // Se normaliza aquí para que ni la web ni la app tengan que saber que wa.me
+    // quiere el número sin signos y con el código de país.
+    whatsapp: normalizarWhatsApp(env.TIENDA_WHATSAPP || MARCA.redes.whatsapp),
+    tarifasEnvio: env.tarifasEnvio,
     moneda: MONEDA,
     pixelpayMode: env.PIXELPAY_MODE,
-    metodosPago: [...METODOS_PAGO],
+    // Solo los métodos realmente cobrables. Mientras no haya pasarela de
+    // tarjeta configurada, el checkout no la ofrece en vez de aceptar una orden
+    // que nunca se podría cobrar.
+    metodosPago: disponibles.map((p) => p.metodo),
+    metodosPagoDetalle: disponibles.map((p) => ({
+      metodo: p.metodo,
+      etiqueta: p.etiqueta,
+      descripcion: p.descripcion,
+    })),
   };
   res.json(config);
 });

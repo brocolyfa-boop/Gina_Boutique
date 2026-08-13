@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-fondo text-tinta font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Etiquetas en mayúsculas con tracking amplio, como en el logo. */
+  .etiqueta {
+    @apply text-xs uppercase tracking-etiqueta text-suave;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-none px-6 py-3 text-sm
+      font-medium uppercase tracking-etiqueta transition disabled:cursor-not-allowed
+      disabled:opacity-40;
+  }
+
+  /* La marca es blanca, así que el botón principal va en tinta, no en "primary". */
+  .btn-principal {
+    @apply btn bg-tinta text-white hover:bg-black;
+  }
+
+  .btn-secundario {
+    @apply btn border border-tinta bg-transparent text-tinta hover:bg-tinta hover:text-white;
+  }
+
+  .tarjeta {
+    @apply border border-borde bg-superficie shadow-tarjeta;
+  }
+
+  .campo {
+    @apply w-full border border-borde bg-white px-4 py-3 text-sm outline-none
+      transition placeholder:text-suave/60 focus:border-tinta;
+  }
+
+  /*
+    El panel es una herramienta de trabajo, no un escaparate.
+
+    La tienda usa la serif de alto contraste y las etiquetas en mayúsculas con
+    tracking amplio, que es la identidad de la marca. Ahí se ve bien: son pocas
+    palabras y grandes. En el panel hay tablas, formularios y cifras, y esa
+    misma tipografía obliga a detenerse a leer cada rótulo. Aquí manda que se
+    entienda de un vistazo.
+
+    Va por ámbito (`.panel`) y no cambiando cada componente: son más de quince
+    sitios y así la tienda queda intacta por construcción.
+  */
+  .panel :is(h1, h2, h3, .font-display) {
+    @apply font-sans font-medium tracking-normal;
+  }
+
+  /*
+    Rótulos legibles: sin mayúsculas forzadas y con más cuerpo.
+
+    `block` importa: en la tienda estas etiquetas son mayúsculas diminutas y se
+    leen como un antetítulo aunque queden en la misma línea que el control. Sin
+    mayúsculas se confunden con el texto de al lado, así que en el panel el
+    rótulo va siempre encima de su campo.
+  */
+  .panel .etiqueta {
+    @apply block text-[0.8125rem] normal-case tracking-normal text-suave;
+  }
+
+  /*
+    Los botones del panel se leen, no se declaman.
+
+    Se apunta a `.btn-principal` y `.btn-secundario` y no a `.btn`: como esas
+    dos hacen `@apply btn`, los estilos quedan copiados dentro de ellas y en el
+    HTML nunca aparece la clase `btn`. Una regla sobre `.btn` no encontraría
+    nada.
+  */
+  .panel .btn-principal,
+  .panel .btn-secundario {
+    @apply px-5 py-2.5 text-sm normal-case tracking-normal;
+  }
+
+  /* El marco blanco del checkout de pago. */
+  .marco-pago {
+    @apply border border-borde bg-white p-6 shadow-marco md:p-8;
+  }
+}
+
+/* El esqueleto de carga: un pulso discreto en gris cálido. */
+@keyframes latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.skeleton {
+  animation: latido 1.4s ease-in-out infinite;
+  background-color: #ece9e7;
+}

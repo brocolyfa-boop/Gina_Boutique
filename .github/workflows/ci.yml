@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: ['**']
-  pull_request:
     branches: [main]
+  pull_request:
+
+# Un solo run por rama: si llegan dos pushes seguidos, el viejo se cancela.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verificar:
@@ -25,11 +29,22 @@ jobs:
       - name: Generar cliente de Prisma
         run: npm run db:generate -w @gina/api
 
+      # `prisma validate` resuelve el env() del datasource, así que exige que
+      # DATABASE_URL exista aunque nunca se conecte. Un valor de mentira basta:
+      # aquí solo se valida la sintaxis del schema, no se toca ninguna base.
       - name: Validar schema de Prisma
         run: npx prisma validate --schema apps/api/prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       - name: Compilar paquete compartido
         run: npm run build -w @gina/shared
+
+      # Las reglas de dinero: precio de oferta, promociones y envío por zona.
+      # Van antes del lint porque un cobro mal calculado importa más que un
+      # espacio de más.
+      - name: Pruebas del paquete compartido
+        run: npm test -w @gina/shared
 
       - name: Lint
         run: npm run lint
