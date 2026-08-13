@@ -95,9 +95,16 @@ function SerieDiaria({ serie }: { serie: PuntoSerie[] }) {
 
   const primero = serie[0];
   const ultimo = serie[serie.length - 1];
-  if (!primero || !ultimo || serie.every((p) => p.ventas === 0)) {
+  if (!primero || !ultimo) {
     return <p className="py-10 text-center text-sm text-suave">Sin ventas en este periodo.</p>;
   }
+
+  /*
+    Un periodo sin ventas dibuja igual: barras a cero sobre la línea base.
+    Antes se sustituía por un texto y el tablero parecía averiado justo cuando
+    la tienda está arrancando, que es cuando más se mira.
+  */
+  const vacio = serie.every((p) => p.ventas === 0);
 
   return (
     <>
@@ -108,6 +115,14 @@ function SerieDiaria({ serie }: { serie: PuntoSerie[] }) {
         aria-label="Ventas por día"
         className="h-44 w-full"
       >
+        {/*
+          Rejilla de fondo. Sin ella, un periodo sin ventas se veía como un
+          rectángulo en blanco y no como un gráfico: no había nada que dijera
+          "aquí van las barras".
+        */}
+        {[0, 25, 50, 75, 100].map((y) => (
+          <rect key={y} x="0" y={y === 100 ? 99.4 : y} width={ancho} height="0.6" className="fill-borde" />
+        ))}
         {serie.map((p, i) => {
           const alto = (p.ventas / maximo) * 96;
           return (
@@ -117,7 +132,7 @@ function SerieDiaria({ serie }: { serie: PuntoSerie[] }) {
               y={100 - alto}
               width={6}
               height={alto || 0.6}
-              className="fill-tinta"
+              className={alto > 0 ? 'fill-tinta' : 'fill-borde'}
             >
               <title>{`${diaCorto(p.fecha)}: ${formatLps(p.ventas)} · ${p.pedidos} pedidos`}</title>
             </rect>
@@ -126,7 +141,7 @@ function SerieDiaria({ serie }: { serie: PuntoSerie[] }) {
       </svg>
       <div className="mt-2 flex justify-between text-[11px] text-suave">
         <span>{diaCorto(primero.fecha)}</span>
-        <span>{formatLps(maximo)} máx.</span>
+        <span>{vacio ? 'Sin ventas todavía' : `${formatLps(maximo)} máx.`}</span>
         <span>{diaCorto(ultimo.fecha)}</span>
       </div>
     </>
@@ -135,7 +150,29 @@ function SerieDiaria({ serie }: { serie: PuntoSerie[] }) {
 
 /** Barras horizontales por zona. En HTML, no SVG: se lee y se copia mejor. */
 function BarrasZona({ filas, vacio }: { filas: VentaPorZona[]; vacio: string }) {
-  if (filas.length === 0) return <p className="text-sm text-suave">{vacio}</p>;
+  /*
+    Sin ventas se dibujan tres carriles vacíos en vez de un párrafo: se ve que
+    es un gráfico esperando datos, no una sección rota. No llevan nombre de
+    zona a propósito —inventar departamentos sería mentir sobre las ventas.
+  */
+  if (filas.length === 0) {
+    return (
+      <div>
+        <ul className="space-y-3" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <li key={i}>
+              <div className="flex items-baseline justify-between gap-4 text-sm text-suave">
+                <span>—</span>
+                <span className="whitespace-nowrap">L 0.00 · 0%</span>
+              </div>
+              <div className="mt-1 h-2 w-full bg-fondo" />
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 text-sm text-suave">{vacio}</p>
+      </div>
+    );
+  }
   const maximo = Math.max(...filas.map((f) => f.ventas), 1);
 
   return (
@@ -368,7 +405,20 @@ export default function PanelVentas() {
 
         <Panel titulo="Clientes que más compran">
           {data.topClientes.length === 0 ? (
-            <p className="text-sm text-suave">Sin compras en este periodo.</p>
+            <div>
+              <ul className="space-y-3" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <li key={i}>
+                    <div className="flex items-baseline justify-between gap-3 text-sm text-suave">
+                      <span>—</span>
+                      <span className="whitespace-nowrap">L 0.00 · 0 ped.</span>
+                    </div>
+                    <div className="mt-1 h-3 w-full bg-fondo" />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 text-sm text-suave">Sin compras en este periodo.</p>
+            </div>
           ) : (
             <ul className="space-y-3">
               {data.topClientes.map((c, i) => (
@@ -394,7 +444,19 @@ export default function PanelVentas() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel titulo="Productos más vendidos">
           {data.masVendidos.length === 0 ? (
-            <p className="text-sm text-suave">Todavía no hay ventas.</p>
+            <div>
+              <ol className="divide-y divide-borde" aria-hidden>
+                {[1, 2, 3].map((i) => (
+                  <li key={i} className="flex items-baseline justify-between gap-3 py-2 text-sm text-suave">
+                    <span>
+                      <span className="mr-2">{i}</span>—
+                    </span>
+                    <span className="whitespace-nowrap">0 u. · L 0.00</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-4 text-sm text-suave">Todavía no hay ventas.</p>
+            </div>
           ) : (
             <ol className="divide-y divide-borde">
               {data.masVendidos.map((p, i) => (

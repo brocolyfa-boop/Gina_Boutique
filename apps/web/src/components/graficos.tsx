@@ -51,8 +51,31 @@ export function Dona({
   const enElCentro =
     centro ?? (total >= 1000 ? `${(total / 1000).toFixed(total >= 10000 ? 0 : 1)} K` : String(Math.round(total)));
   const suma = datos.reduce((t, d) => t + d.valor, 0);
+
+  /*
+    Sin datos se dibuja el aro vacío, no un texto.
+
+    Una tienda que recién abre pasa días sin ventas, y un panel que en vez de
+    gráficos enseña párrafos de "sin datos" parece roto. El aro gris comunica lo
+    mismo —todavía no hay nada— sin que el tablero se desarme.
+  */
   if (suma <= 0) {
-    return <p className="py-10 text-center text-sm text-suave">Sin datos en este periodo.</p>;
+    return (
+      <div className="flex flex-wrap items-center gap-6">
+        <svg viewBox="0 0 42 42" className="h-40 w-40 shrink-0" role="img" aria-label={titulo}>
+          <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="#EFEFEF" strokeWidth="5" />
+          <text x="21" y="20.4" textAnchor="middle" className="fill-suave text-[4.6px] font-medium">
+            {formato(0)}
+          </text>
+          <text x="21" y="25" textAnchor="middle" className="fill-suave text-[2.4px] uppercase">
+            Total
+          </text>
+        </svg>
+        <p className="min-w-0 flex-1 text-sm text-suave">
+          Todavía no hay datos en este periodo. El gráfico se llena solo cuando entren ventas.
+        </p>
+      </div>
+    );
   }
 
   let acumulado = 0;
