@@ -13,6 +13,7 @@ const Checkout = lazy(() => import('./pages/Checkout'));
 const Entrar = lazy(() => import('./pages/Entrar'));
 const MisPedidos = lazy(() => import('./pages/MisPedidos'));
 const MiCuenta = lazy(() => import('./pages/MiCuenta'));
+const Recuperar = lazy(() => import('./pages/Recuperar'));
 const Seguimiento = lazy(() => import('./pages/Seguimiento'));
 const Politicas = lazy(() => import('./pages/Politicas'));
 const NoEncontrada = lazy(() => import('./pages/NoEncontrada'));
@@ -99,6 +100,24 @@ export default function App() {
           element={
             <Suspense fallback={<Cargando />}>
               <MiCuenta />
+            </Suspense>
+          }
+        />
+        {/* Las dos direcciones llevan a la misma pantalla: "recuperar" pide el
+            correo y "restablecer?token=" viene del enlace del correo. */}
+        <Route
+          path="recuperar"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <Recuperar />
+            </Suspense>
+          }
+        />
+        <Route
+          path="restablecer"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <Recuperar />
             </Suspense>
           }
         />

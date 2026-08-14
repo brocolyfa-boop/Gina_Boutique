@@ -44,12 +44,30 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  cart          Cart?
-  orders        Order[]
-  addresses     Address[]
-  refreshTokens RefreshToken[]
+  cart           Cart?
+  orders         Order[]
+  addresses      Address[]
+  refreshTokens  RefreshToken[]
+  passwordResets PasswordReset[]
 
   @@map("users")
+}
+
+/// Enlaces de "olvidé mi contraseña". Se guarda solo el hash del token: quien
+/// consiga leer la base no puede usar los enlaces pendientes para entrar.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  /// Un enlace sirve una sola vez; al usarse queda marcado con la fecha.
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
 }
 
 /// Refresh tokens guardados hasheados para poder revocar sesiones.

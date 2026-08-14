@@ -42,6 +42,15 @@ export const cambiarPasswordSchema = z.object({
   nueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
 });
 
+export const recuperarPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email inválido'),
+});
+
+export const restablecerPasswordSchema = z.object({
+  token: z.string().trim().min(20, 'El enlace no es válido'),
+  nueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+});
+
 /* -------------------------------- catálogo -------------------------------- */
 
 export const listarProductosQuerySchema = z.object({
