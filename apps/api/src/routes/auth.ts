@@ -8,9 +8,13 @@ import {
   cambiarPasswordSchema,
   googleLoginSchema,
   loginSchema,
+  mensajeCodigoWhatsApp,
+  normalizarWhatsApp,
   recuperarPasswordSchema,
+  recuperarPorWhatsAppSchema,
   refreshSchema,
   registroSchema,
+  restablecerConCodigoSchema,
   restablecerPasswordSchema,
   type AuthResponse,
 } from '@gina/shared';
@@ -18,7 +22,7 @@ import { prisma } from '../prisma.js';
 import { env } from '../env.js';
 import { badRequest, conflict, notFound, unauthorized } from '../lib/errors.js';
 import { toUserDTO } from '../lib/dto.js';
-import { enviarCorreoA } from '../lib/notificaciones.js';
+import { enviarCorreoA, enviarWhatsAppA } from '../lib/notificaciones.js';
 import { verificarTokenGoogle } from '../lib/google.js';
 import {
   emitirRefreshToken,
@@ -302,6 +306,160 @@ router.post(
     // motivo principal por el que una persona recupera su cuenta.
     await revocarTodasLasSesiones(registro.userId);
 
+    res.status(204).end();
+  }),
+);
+
+/* --------------------- recuperación por WhatsApp -------------------------- */
+
+/** 10 minutos: un código corto no debe andar vivo por ahí una hora. */
+const VIGENCIA_CODIGO_MS = 10 * 60 * 1000;
+/** Cinco intentos y el código se quema. Un millón de combinaciones no es mucho. */
+const INTENTOS_MAXIMOS = 5;
+
+/**
+ * Freno específico para los códigos.
+ *
+ * El límite general de auth (20 cada 15 min) es demasiado holgado aquí: con 20
+ * intentos por ventana y sin más control, probar códigos ajenos sale barato.
+ */
+const limiteCodigo = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: { message: 'Demasiados intentos, prueba en unos minutos', code: 'RATE_LIMIT' } },
+});
+
+/**
+ * Busca la cuenta por número de teléfono.
+ *
+ * `telefono` se guarda como lo escribió la persona (9999-9999, +504 9999 9999),
+ * así que la comparación se hace sobre los dígitos, no sobre el texto.
+ *
+ * Devuelve null si hay más de una cuenta con ese número: pasa en familias que
+ * comparten teléfono, y ahí no hay forma de saber cuál cuenta recuperar.
+ * Entregar la equivocada sería darle a alguien la cuenta de otro.
+ */
+async function cuentaPorTelefono(telefono: string) {
+  const digitos = normalizarWhatsApp(telefono);
+  const candidatos = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM users
+    WHERE right(regexp_replace(coalesce(telefono, ''), '\D', '', 'g'), 8) = right(${digitos}, 8)
+      AND coalesce(telefono, '') <> ''
+    LIMIT 2
+  `;
+  if (candidatos.length !== 1 || !candidatos[0]) return null;
+  return prisma.user.findUnique({ where: { id: candidatos[0].id } });
+}
+
+const hashCodigo = (codigo: string) => crypto.createHash('sha256').update(codigo).digest('hex');
+
+/**
+ * Pide el código por WhatsApp.
+ *
+ * Responde 204 siempre, haya cuenta o no: si dijéramos "ese número no tiene
+ * cuenta", cualquiera podría averiguar qué teléfonos son clientes probando.
+ */
+router.post(
+  '/recuperar-whatsapp',
+  limiteCodigo,
+  validarBody(recuperarPorWhatsAppSchema),
+  asyncHandler(async (req, res) => {
+    const user = await cuentaPorTelefono(req.body.telefono);
+
+    if (user) {
+      // Los códigos anteriores se queman: si pidió varios, solo vale el último.
+      await prisma.passwordReset.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+
+      // randomInt es criptográficamente seguro; Math.random es predecible y no
+      // sirve para nada que proteja una cuenta.
+      const codigo = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+      const destino = normalizarWhatsApp(req.body.telefono);
+
+      const registro = await prisma.passwordReset.create({
+        data: {
+          userId: user.id,
+          codigoHash: hashCodigo(codigo),
+          telefono: destino,
+          expiresAt: new Date(Date.now() + VIGENCIA_CODIGO_MS),
+        },
+      });
+
+      // Con credenciales de Meta el código sale solo; sin ellas queda pendiente
+      // en el panel para que la tienda lo mande a mano.
+      const texto = mensajeCodigoWhatsApp(user.nombre, codigo);
+      const enviado = await enviarWhatsAppA(destino, texto).catch((e) => {
+        console.error('No se pudo mandar el código por WhatsApp:', e);
+        return false;
+      });
+
+      if (enviado) {
+        await prisma.passwordReset.update({
+          where: { id: registro.id },
+          data: { enviadoAt: new Date() },
+        });
+      } else {
+        // El código no se escribe en los logs: quien los lea podría entrar a la
+        // cuenta. La tienda lo ve en el panel, que exige ser administrador.
+        console.warn(`[RECUPERAR] código pendiente de enviar a ${destino}`);
+      }
+    }
+
+    res.status(204).end();
+  }),
+);
+
+/** Canjea el código por una contraseña nueva. */
+router.post(
+  '/restablecer-codigo',
+  limiteCodigo,
+  validarBody(restablecerConCodigoSchema),
+  asyncHandler(async (req, res) => {
+    const destino = normalizarWhatsApp(req.body.telefono);
+
+    const registro = await prisma.passwordReset.findFirst({
+      where: { telefono: destino, usedAt: null, codigoHash: { not: null } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Mismo mensaje para "no hay código", "venció" y "está mal": distinguirlos
+    // le diría a quien prueba si el número tiene una recuperación en curso.
+    const invalido = () => badRequest('El código no es correcto o ya venció. Pide uno nuevo.');
+
+    if (!registro || registro.expiresAt < new Date()) throw invalido();
+
+    if (registro.intentos >= INTENTOS_MAXIMOS) {
+      await prisma.passwordReset.update({
+        where: { id: registro.id },
+        data: { usedAt: new Date() },
+      });
+      throw badRequest('Demasiados intentos con este código. Pide uno nuevo.');
+    }
+
+    if (registro.codigoHash !== hashCodigo(req.body.codigo)) {
+      await prisma.passwordReset.update({
+        where: { id: registro.id },
+        data: { intentos: { increment: 1 } },
+      });
+      throw invalido();
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: registro.userId },
+        data: { passwordHash: await bcrypt.hash(req.body.nueva, 12) },
+      }),
+      prisma.passwordReset.update({
+        where: { id: registro.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    await revocarTodasLasSesiones(registro.userId);
     res.status(204).end();
   }),
 );

@@ -4,6 +4,7 @@ import type { Rol } from '@gina/shared';
 import { formatLps } from '@gina/shared';
 import { api } from '../lib/api';
 import { Skeleton } from './ui';
+import RecuperacionesPendientes from './RecuperacionesPendientes';
 
 interface ClienteFila {
   id: string;
@@ -34,6 +35,10 @@ export default function AdminClientes() {
 
   return (
     <div>
+      {/* Arriba del todo: es lo único de esta pantalla que tiene a alguien
+          esperando del otro lado. */}
+      <RecuperacionesPendientes />
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <input
           type="search"

@@ -116,6 +116,39 @@ export function hayCorreoConfigurado(): boolean {
   return Boolean(env.RESEND_API_KEY);
 }
 
+/**
+ * WhatsApp a un número concreto, no al de la tienda.
+ *
+ * `porWhatsApp` avisa siempre a WHATSAPP_DESTINO, que es la dueña. Un código de
+ * recuperación va al cliente, así que el destinatario viaja como parámetro.
+ *
+ * Devuelve false si Meta no está configurado, para que quien llame lo deje
+ * pendiente en el panel en vez de dar por enviado algo que nunca salió.
+ */
+export async function enviarWhatsAppA(destino: string, texto: string): Promise<boolean> {
+  const { WHATSAPP_TOKEN, WHATSAPP_PHONE_ID } = env;
+  if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_ID) return false;
+
+  const res = await conLimite(`https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${WHATSAPP_TOKEN}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: destino,
+      type: 'text',
+      text: { body: texto },
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`WhatsApp respondió ${res.status}: ${await res.text()}`);
+  }
+  return true;
+}
+
 export function hayCanalConfigurado(): boolean {
   return Boolean(
     (env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID && env.WHATSAPP_DESTINO) ||

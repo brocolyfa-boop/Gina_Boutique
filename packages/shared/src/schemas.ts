@@ -56,6 +56,23 @@ export const restablecerPasswordSchema = z.object({
   nueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
 });
 
+/** Pedir el código: solo el número de WhatsApp. */
+export const recuperarPorWhatsAppSchema = z.object({
+  telefono: telefonoHN,
+});
+
+/** Canjear el código por una contraseña nueva. */
+export const restablecerConCodigoSchema = z.object({
+  telefono: telefonoHN,
+  codigo: z
+    .string()
+    .trim()
+    // Se limpian espacios y guiones: la gente copia el código del chat con todo.
+    .transform((c) => c.replace(/\D/g, ''))
+    .pipe(z.string().length(6, 'El código son 6 dígitos')),
+  nueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+});
+
 /* -------------------------------- catálogo -------------------------------- */
 
 export const listarProductosQuerySchema = z.object({
