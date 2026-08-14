@@ -10,6 +10,7 @@ import {
 } from '@gina/shared';
 import { env } from '../env.js';
 import { metodosDisponibles } from '../lib/pagos.js';
+import { hayCorreoConfigurado } from '../lib/notificaciones.js';
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.get('/', (_req, res) => {
     moneda: MONEDA,
     pixelpayMode: env.PIXELPAY_MODE,
     googleClientId: env.GOOGLE_CLIENT_ID,
+    correoConfigurado: hayCorreoConfigurado(),
     // Solo los métodos realmente cobrables. Mientras no haya pasarela de
     // tarjeta configurada, el checkout no la ofrece en vez de aceptar una orden
     // que nunca se podría cobrar.

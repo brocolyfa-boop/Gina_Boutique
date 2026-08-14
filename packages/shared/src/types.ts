@@ -174,6 +174,11 @@ export interface ConfigPublicaDTO {
    * está pensado para viajar al navegador. Vacío = no se muestra el botón.
    */
   googleClientId: string;
+  /**
+   * Si la tienda puede enviar correos. Con esto en false, la pantalla de
+   * recuperar contraseña no promete un correo que nunca va a salir.
+   */
+  correoConfigurado: boolean;
 }
 
 export interface Paginado<T> {
