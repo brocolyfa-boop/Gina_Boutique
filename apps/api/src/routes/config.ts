@@ -30,6 +30,7 @@ router.get('/', (_req, res) => {
     tarifasEnvio: env.tarifasEnvio,
     moneda: MONEDA,
     pixelpayMode: env.PIXELPAY_MODE,
+    googleClientId: env.GOOGLE_CLIENT_ID,
     // Solo los métodos realmente cobrables. Mientras no haya pasarela de
     // tarjeta configurada, el checkout no la ofrece en vez de aceptar una orden
     // que nunca se podría cobrar.

@@ -6,6 +6,7 @@ import {
   MARCA,
   actualizarPerfilSchema,
   cambiarPasswordSchema,
+  googleLoginSchema,
   loginSchema,
   recuperarPasswordSchema,
   refreshSchema,
@@ -18,6 +19,7 @@ import { env } from '../env.js';
 import { badRequest, conflict, notFound, unauthorized } from '../lib/errors.js';
 import { toUserDTO } from '../lib/dto.js';
 import { enviarCorreoA } from '../lib/notificaciones.js';
+import { verificarTokenGoogle } from '../lib/google.js';
 import {
   emitirRefreshToken,
   firmarAccessToken,
@@ -76,7 +78,10 @@ router.post(
 
     const user = await prisma.user.findUnique({ where: { email } });
     // Mismo mensaje para email inexistente y password mala: no revelamos qué falló.
-    const passwordOk = user ? await bcrypt.compare(password, user.passwordHash) : false;
+    // Una cuenta creada con Google no tiene hash: nunca entra por aquí, y se
+    // comprueba antes de llamar a bcrypt, que con null lanzaría un 500.
+    const passwordOk =
+      user?.passwordHash != null ? await bcrypt.compare(password, user.passwordHash) : false;
     if (!user || !passwordOk) throw unauthorized('Correo o contraseña incorrectos');
 
     const respuesta: AuthResponse = {
@@ -142,6 +147,17 @@ router.patch(
     const user = await prisma.user.findUnique({ where: { id: req.usuario!.id } });
     if (!user) throw notFound('Usuario no encontrado');
 
+    /*
+      Quien entró con Google no tiene contraseña que confirmar. Pedirle la
+      "actual" es imposible de cumplir, así que se le manda al camino que sí
+      puede completar: el correo de recuperación le deja poner la primera.
+    */
+    if (user.passwordHash == null) {
+      throw badRequest(
+        'Tu cuenta entra con Google y todavía no tiene contraseña. Usa "Olvidé mi contraseña" para crear una.',
+      );
+    }
+
     const actualOk = await bcrypt.compare(req.body.actual, user.passwordHash);
     if (!actualOk) throw unauthorized('La contraseña actual no es correcta');
 
@@ -150,6 +166,44 @@ router.patch(
       data: { passwordHash: await bcrypt.hash(req.body.nueva, 12) },
     });
     res.status(204).end();
+  }),
+);
+
+/* ---------------------------- entrar con Google --------------------------- */
+
+/**
+ * Entra (o se registra) con una cuenta de Google.
+ *
+ * Tres casos, en este orden:
+ *
+ *  1. Ya entró antes con Google → se reconoce por su `googleId`.
+ *  2. Tiene cuenta con contraseña y el mismo correo → se enlaza. Es seguro
+ *     porque `verificarTokenGoogle` exige que Google confirme el correo, así
+ *     que la persona demostró ser dueña de esa dirección.
+ *  3. No existe → se le crea la cuenta sin contraseña.
+ */
+router.post(
+  '/google',
+  limiteAuth,
+  validarBody(googleLoginSchema),
+  asyncHandler(async (req, res) => {
+    const { googleId, email, nombre } = await verificarTokenGoogle(req.body.credential);
+
+    let user = await prisma.user.findUnique({ where: { googleId } });
+
+    if (!user) {
+      const porCorreo = await prisma.user.findUnique({ where: { email } });
+      user = porCorreo
+        ? await prisma.user.update({ where: { id: porCorreo.id }, data: { googleId } })
+        : await prisma.user.create({ data: { nombre, email, googleId, passwordHash: null } });
+    }
+
+    const respuesta: AuthResponse = {
+      user: toUserDTO(user),
+      accessToken: firmarAccessToken({ sub: user.id, rol: user.rol }),
+      refreshToken: await emitirRefreshToken(user.id),
+    };
+    res.json(respuesta);
   }),
 );
 

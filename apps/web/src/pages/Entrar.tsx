@@ -4,6 +4,7 @@ import { MARCA } from '@gina/shared';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { Aviso } from '../components/ui';
+import BotonGoogle from '../components/BotonGoogle';
 import { useTitulo } from '../lib/titulo';
 
 export default function Entrar() {
@@ -129,6 +130,8 @@ export default function Entrar() {
         <button type="submit" disabled={enviando} className="btn-principal w-full">
           {enviando ? 'Un momento…' : modo === 'login' ? 'Entrar' : 'Crear cuenta'}
         </button>
+
+        <BotonGoogle alEntrar={() => navigate(volver, { replace: true })} />
 
         {/* Solo al entrar: en el registro todavía no hay contraseña que olvidar. */}
         {modo === 'login' && (
