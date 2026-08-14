@@ -74,6 +74,48 @@ async function porCorreo(asunto: string, texto: string): Promise<void> {
   }
 }
 
+/**
+ * Correo a una dirección concreta, no al buzón de la tienda.
+ *
+ * `porCorreo` siempre escribe a NOTIFICAR_EMAIL, que es la dueña. Para
+ * recuperar una contraseña hay que escribirle al cliente, así que el
+ * destinatario viaja como parámetro.
+ *
+ * Devuelve false si no hay correo configurado, para que quien llame pueda
+ * decirle la verdad al usuario en vez de fingir que el mensaje salió.
+ */
+export async function enviarCorreoA(
+  destino: string,
+  asunto: string,
+  texto: string,
+): Promise<boolean> {
+  const { RESEND_API_KEY, NOTIFICAR_EMAIL_DESDE } = env;
+  if (!RESEND_API_KEY) return false;
+
+  const res = await conLimite('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${RESEND_API_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: NOTIFICAR_EMAIL_DESDE,
+      to: [destino],
+      subject: asunto,
+      text: texto,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Resend respondió ${res.status}: ${await res.text()}`);
+  }
+  return true;
+}
+
+export function hayCorreoConfigurado(): boolean {
+  return Boolean(env.RESEND_API_KEY);
+}
+
 export function hayCanalConfigurado(): boolean {
   return Boolean(
     (env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID && env.WHATSAPP_DESTINO) ||

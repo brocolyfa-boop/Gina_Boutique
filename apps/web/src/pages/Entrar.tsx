@@ -130,6 +130,15 @@ export default function Entrar() {
           {enviando ? 'Un momento…' : modo === 'login' ? 'Entrar' : 'Crear cuenta'}
         </button>
 
+        {/* Solo al entrar: en el registro todavía no hay contraseña que olvidar. */}
+        {modo === 'login' && (
+          <p className="text-center text-sm">
+            <Link to="/recuperar" className="text-suave underline hover:text-tinta">
+              Olvidé mi contraseña
+            </Link>
+          </p>
+        )}
+
         <p className="text-center text-sm text-suave">
           {modo === 'login' ? '¿Aún no tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
           <button

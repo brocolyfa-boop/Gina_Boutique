@@ -1,21 +1,28 @@
+import crypto from 'node:crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import {
+  MARCA,
   actualizarPerfilSchema,
   cambiarPasswordSchema,
   loginSchema,
+  recuperarPasswordSchema,
   refreshSchema,
   registroSchema,
+  restablecerPasswordSchema,
   type AuthResponse,
 } from '@gina/shared';
 import { prisma } from '../prisma.js';
-import { conflict, notFound, unauthorized } from '../lib/errors.js';
+import { env } from '../env.js';
+import { badRequest, conflict, notFound, unauthorized } from '../lib/errors.js';
 import { toUserDTO } from '../lib/dto.js';
+import { enviarCorreoA } from '../lib/notificaciones.js';
 import {
   emitirRefreshToken,
   firmarAccessToken,
   revocarRefreshToken,
+  revocarTodasLasSesiones,
   rotarRefreshToken,
 } from '../lib/tokens.js';
 import { requiereAuth } from '../middleware/auth.js';
@@ -142,6 +149,105 @@ router.patch(
       where: { id: user.id },
       data: { passwordHash: await bcrypt.hash(req.body.nueva, 12) },
     });
+    res.status(204).end();
+  }),
+);
+
+/* ------------------------- olvidé mi contraseña -------------------------- */
+
+/** Una hora: suficiente para abrir el correo, corto si alguien más lo ve. */
+const VIGENCIA_ENLACE_MS = 60 * 60 * 1000;
+
+const hashEnlace = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+
+/**
+ * Pide el enlace de recuperación.
+ *
+ * Responde 204 siempre, exista o no la cuenta. Si dijéramos "ese correo no
+ * está registrado", cualquiera podría averiguar qué clientes tiene la tienda
+ * probando direcciones una por una.
+ */
+router.post(
+  '/recuperar',
+  limiteAuth,
+  validarBody(recuperarPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { email: req.body.email } });
+
+    if (user) {
+      // Los enlaces viejos dejan de servir: si alguien pidió varios, solo el
+      // último vale.
+      await prisma.passwordReset.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+
+      const token = crypto.randomBytes(32).toString('hex');
+      await prisma.passwordReset.create({
+        data: {
+          userId: user.id,
+          tokenHash: hashEnlace(token),
+          expiresAt: new Date(Date.now() + VIGENCIA_ENLACE_MS),
+        },
+      });
+
+      const base = env.URL_TIENDA.trim().replace(/\/+$/, '');
+      const enlace = `${base}/restablecer?token=${token}`;
+      const texto = [
+        `Hola ${user.nombre.split(' ')[0]},`,
+        '',
+        `Pediste recuperar tu contraseña de ${MARCA.nombre}. Abre este enlace para elegir una nueva:`,
+        '',
+        enlace,
+        '',
+        'El enlace sirve una sola vez y vence en una hora.',
+        'Si no fuiste tú, ignora este correo: tu contraseña sigue igual.',
+      ].join('\n');
+
+      try {
+        const enviado = await enviarCorreoA(user.email, `Recupera tu contraseña · ${MARCA.nombre}`, texto);
+        // Sin correo configurado el enlace sale por los logs del servicio. Es
+        // un respaldo para la dueña, no una solución: el cliente no los ve.
+        if (!enviado) console.warn(`[RECUPERAR] ${user.email}\n${enlace}`);
+      } catch (e) {
+        console.error('No se pudo enviar el correo de recuperación:', e);
+        console.warn(`[RECUPERAR] ${user.email}\n${enlace}`);
+      }
+    }
+
+    res.status(204).end();
+  }),
+);
+
+/** Cambia la contraseña con el token del correo. */
+router.post(
+  '/restablecer',
+  limiteAuth,
+  validarBody(restablecerPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const registro = await prisma.passwordReset.findUnique({
+      where: { tokenHash: hashEnlace(req.body.token) },
+    });
+
+    if (!registro || registro.usedAt || registro.expiresAt < new Date()) {
+      throw badRequest('Este enlace ya no sirve. Pide uno nuevo.');
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: registro.userId },
+        data: { passwordHash: await bcrypt.hash(req.body.nueva, 12) },
+      }),
+      prisma.passwordReset.update({
+        where: { id: registro.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    // Si alguien había entrado con la contraseña vieja, queda fuera. Es el
+    // motivo principal por el que una persona recupera su cuenta.
+    await revocarTodasLasSesiones(registro.userId);
+
     res.status(204).end();
   }),
 );
