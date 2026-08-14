@@ -247,6 +247,23 @@ export function descuentoTotalPorcentaje(
  * Va junto al resto de textos de WhatsApp para que el cliente reciba siempre la
  * misma información del mismo pedido, la mande quien la mande.
  */
+/**
+ * Mensaje con el código de recuperación.
+ *
+ * Va aquí junto a los demás textos de WhatsApp para que diga lo mismo lo mande
+ * el servidor automáticamente o la dueña desde el panel.
+ */
+export function mensajeCodigoWhatsApp(nombre: string, codigo: string): string {
+  return [
+    `${saludo(nombre)}, tu código para recuperar la contraseña de Gina Boutique es:`,
+    '',
+    `*${codigo}*`,
+    '',
+    'Vence en 10 minutos y sirve una sola vez.',
+    'Si no lo pediste, ignora este mensaje: tu cuenta sigue igual.',
+  ].join('\n');
+}
+
 export function mensajeCobroWhatsApp(o: PedidoResumible, enlace: string): string {
   return [
     `${saludo(o.nombreCliente)}, aquí está el enlace para pagar tu pedido ${o.numero}.`,

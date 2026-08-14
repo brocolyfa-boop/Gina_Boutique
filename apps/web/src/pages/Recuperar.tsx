@@ -1,25 +1,27 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import type { ConfigPublicaDTO } from '@gina/shared';
 import { MARCA, enlaceWhatsApp } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { Aviso } from '../components/ui';
 import { useTitulo } from '../lib/titulo';
 
 /**
- * Recuperar la contraseña. La misma pantalla cubre los dos momentos:
+ * Recuperar la contraseña por WhatsApp.
  *
- *  - sin `?token=` pide el correo y manda el enlace;
- *  - con `?token=` (el del correo) deja elegir la contraseña nueva.
+ * Se pide el número y no el correo porque en Honduras el WhatsApp es el canal
+ * que la gente sí revisa, y es por donde la tienda ya atiende todo lo demás.
  *
- * Van juntas porque comparten encabezado, estilo y mensajes; separarlas en dos
- * archivos duplicaba todo para cambiar cuatro líneas.
+ * La pantalla tiene dos pasos y un caso aparte:
+ *
+ *  - paso 1: el número, que dispara el código;
+ *  - paso 2: el código de 6 dígitos y la contraseña nueva;
+ *  - con `?token=` en la dirección se atiende el enlace por correo, que sigue
+ *    sirviendo para cuando la tienda tenga envío de correo configurado.
  */
 export default function Recuperar() {
   const [params] = useSearchParams();
   const token = params.get('token');
-  useTitulo(token ? 'Elegir contraseña nueva' : 'Recuperar contraseña');
+  useTitulo('Recuperar mi contraseña');
 
   return (
     <div className="mx-auto max-w-md px-4 py-16">
@@ -31,11 +33,11 @@ export default function Recuperar() {
         <p className="mt-2 text-sm text-suave">
           {token
             ? 'Escríbela dos veces para no equivocarte.'
-            : 'Escribe tu correo y te ayudamos a recuperar tu cuenta.'}
+            : 'Te mandamos un código por WhatsApp para que puedas entrar de nuevo.'}
         </p>
       </div>
 
-      {token ? <Restablecer token={token} /> : <Pedir />}
+      {token ? <PorEnlace token={token} /> : <PorWhatsApp />}
 
       <p className="mt-6 text-center text-xs text-suave">
         <Link to="/entrar" className="hover:text-tinta">
@@ -46,87 +48,141 @@ export default function Recuperar() {
   );
 }
 
-function Pedir() {
-  const [email, setEmail] = useState('');
+function PorWhatsApp() {
+  const navigate = useNavigate();
+  const [paso, setPaso] = useState<'telefono' | 'codigo'>('telefono');
+  const [telefono, setTelefono] = useState('');
+  const [codigo, setCodigo] = useState('');
+  const [nueva, setNueva] = useState('');
+  const [repetir, setRepetir] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const [listo, setListo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [listo, setListo] = useState(false);
 
-  // Mientras la tienda no tenga envío de correo, prometer uno sería mentir: el
-  // cliente esperaría en su bandeja algo que nunca va a llegar.
-  const { data: config } = useQuery({
-    queryKey: ['config'],
-    queryFn: () => api<ConfigPublicaDTO>('/config'),
-  });
-  const hayCorreo = config?.correoConfigurado ?? false;
-  const whatsapp = enlaceWhatsApp(
+  const ayuda = enlaceWhatsApp(
     MARCA.redes.whatsapp,
-    'Hola, olvidé la contraseña de mi cuenta y necesito ayuda para recuperarla.',
+    'Hola, pedí el código para recuperar mi contraseña y no me ha llegado.',
   );
 
-  const enviar = async (e: React.FormEvent) => {
+  const pedirCodigo = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setEnviando(true);
     try {
-      await api('/auth/recuperar', { method: 'POST', body: { email } });
-      setListo(true);
+      await api('/auth/recuperar-whatsapp', { method: 'POST', body: { telefono } });
+      setPaso('codigo');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No pudimos procesar tu solicitud. Intenta de nuevo.');
+      setError(err instanceof ApiError ? err.message : 'No pudimos procesar tu solicitud.');
     } finally {
       setEnviando(false);
     }
   };
 
-  /*
-    El mensaje no confirma si el correo estaba registrado. Decir "no existe esa
-    cuenta" dejaría que cualquiera averigüe qué clientes tiene la tienda
-    probando direcciones.
-  */
+  const cambiar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (nueva !== repetir) return setError('Las dos contraseñas no son iguales');
+
+    setError(null);
+    setEnviando(true);
+    try {
+      await api('/auth/restablecer-codigo', { method: 'POST', body: { telefono, codigo, nueva } });
+      setListo(true);
+      // Cambiar la contraseña cierra las sesiones abiertas, así que hay que
+      // volver a entrar: se lleva a esa pantalla en vez de dejarlo a medias.
+      setTimeout(() => navigate('/entrar', { replace: true }), 2500);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   if (listo) {
     return (
       <div className="tarjeta mt-8 p-6 text-center">
-        {hayCorreo ? (
-          <>
-            <p className="text-sm">
-              Si <strong>{email}</strong> tiene una cuenta, ya le mandamos un enlace para crear la
-              contraseña nueva.
-            </p>
-            <p className="mt-3 text-xs text-suave">
-              Revisa también la carpeta de correo no deseado. El enlace vence en una hora.
-            </p>
-            <p className="mt-5 text-xs text-suave">
-              ¿No te llegó? Escríbenos por WhatsApp al {MARCA.redes.whatsapp} y te ayudamos.
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-sm">Registramos tu solicitud.</p>
-            <p className="mt-3 text-sm text-suave">
-              Por ahora recuperamos las contraseñas por WhatsApp: escríbenos y te devolvemos el
-              acceso a tu cuenta el mismo día.
-            </p>
-            {whatsapp && (
-              <a href={whatsapp} target="_blank" rel="noreferrer" className="btn-principal mt-5">
-                Escribirnos por WhatsApp
-              </a>
-            )}
-          </>
-        )}
+        <Aviso tipo="ok">Tu contraseña quedó cambiada.</Aviso>
+        <p className="mt-4 text-sm text-suave">Te llevamos a entrar…</p>
       </div>
     );
   }
 
+  if (paso === 'telefono') {
+    return (
+      <form onSubmit={pedirCodigo} className="tarjeta mt-8 space-y-4 p-6">
+        <label className="block">
+          <span className="etiqueta">Tu número de WhatsApp</span>
+          <input
+            required
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="9999-9999"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            className="campo mt-2"
+          />
+          <span className="mt-1 block text-xs text-suave">
+            El mismo con el que hiciste tu cuenta.
+          </span>
+        </label>
+
+        {error && <Aviso>{error}</Aviso>}
+
+        <button type="submit" disabled={enviando} className="btn-principal w-full">
+          {enviando ? 'Enviando…' : 'Mandarme el código'}
+        </button>
+      </form>
+    );
+  }
+
   return (
-    <form onSubmit={enviar} className="tarjeta mt-8 space-y-4 p-6">
+    <form onSubmit={cambiar} className="tarjeta mt-8 space-y-4 p-6">
+      {/*
+        El aviso no confirma si el número tenía cuenta. Decir "ese número no
+        está registrado" dejaría averiguar qué teléfonos son clientes.
+      */}
+      <p className="border border-borde bg-fondo px-4 py-3 text-sm">
+        Si <strong>{telefono}</strong> tiene una cuenta, te llega un código por WhatsApp.
+        <span className="mt-1 block text-xs text-suave">
+          Vence en 10 minutos. Si la tienda está atendiendo, puede tardar unos minutos.
+        </span>
+      </p>
+
       <label className="block">
-        <span className="etiqueta">Correo</span>
+        <span className="etiqueta">Código de 6 dígitos</span>
         <input
           required
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          placeholder="123456"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          className="campo mt-2 text-center text-lg tracking-[0.4em]"
+        />
+      </label>
+
+      <label className="block">
+        <span className="etiqueta">Contraseña nueva</span>
+        <input
+          required
+          minLength={8}
+          type="password"
+          autoComplete="new-password"
+          value={nueva}
+          onChange={(e) => setNueva(e.target.value)}
+          className="campo mt-2"
+        />
+        <span className="mt-1 block text-xs text-suave">Al menos 8 caracteres.</span>
+      </label>
+
+      <label className="block">
+        <span className="etiqueta">Repite la contraseña</span>
+        <input
+          required
+          minLength={8}
+          type="password"
+          autoComplete="new-password"
+          value={repetir}
+          onChange={(e) => setRepetir(e.target.value)}
           className="campo mt-2"
         />
       </label>
@@ -134,13 +190,38 @@ function Pedir() {
       {error && <Aviso>{error}</Aviso>}
 
       <button type="submit" disabled={enviando} className="btn-principal w-full">
-        {enviando ? 'Enviando…' : hayCorreo ? 'Enviarme el enlace' : 'Continuar'}
+        {enviando ? 'Guardando…' : 'Cambiar mi contraseña'}
       </button>
+
+      <div className="flex flex-wrap justify-between gap-3 border-t border-borde pt-4 text-xs">
+        <button
+          type="button"
+          onClick={() => {
+            setPaso('telefono');
+            setCodigo('');
+            setError(null);
+          }}
+          className="text-suave underline hover:text-tinta"
+        >
+          Usar otro número
+        </button>
+        {ayuda && (
+          <a
+            href={ayuda}
+            target="_blank"
+            rel="noreferrer"
+            className="text-suave underline hover:text-tinta"
+          >
+            No me llegó el código
+          </a>
+        )}
+      </div>
     </form>
   );
 }
 
-function Restablecer({ token }: { token: string }) {
+/** Enlace por correo. Sigue sirviendo cuando haya envío de correo configurado. */
+function PorEnlace({ token }: { token: string }) {
   const navigate = useNavigate();
   const [nueva, setNueva] = useState('');
   const [repetir, setRepetir] = useState('');
@@ -157,8 +238,6 @@ function Restablecer({ token }: { token: string }) {
     try {
       await api('/auth/restablecer', { method: 'POST', body: { token, nueva } });
       setListo(true);
-      // Se manda a entrar con la contraseña nueva: cambiarla cierra las
-      // sesiones abiertas, así que no se puede entrar solo.
       setTimeout(() => navigate('/entrar', { replace: true }), 2500);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña.');
