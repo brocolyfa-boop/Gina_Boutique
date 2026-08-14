@@ -9,6 +9,8 @@ interface AuthCtx {
   esAdmin: boolean;
   login: (datos: LoginInput) => Promise<void>;
   registro: (datos: RegistroInput) => Promise<void>;
+  /** Entra con el token que devuelve el botón de Google. */
+  entrarConGoogle: (credential: string) => Promise<void>;
   salir: () => Promise<void>;
   /** Reemplaza el usuario en memoria, p. ej. tras editar el perfil en Mi cuenta. */
   actualizarUsuario: (user: UserDTO) => void;
@@ -32,7 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setCargando(false));
   }, []);
 
-  const entrar = useCallback(async (ruta: string, datos: LoginInput | RegistroInput) => {
+  // Los tres caminos de entrada (contraseña, registro y Google) guardan el
+  // token igual: si cada uno lo hiciera por su cuenta, uno terminaría dejando
+  // la sesión a medias.
+  const entrar = useCallback(async (ruta: string, datos: unknown) => {
     const res = await api<AuthResponse>(ruta, { method: 'POST', body: datos });
     tokens.guardar(res.accessToken, res.refreshToken);
     setUser(res.user);
@@ -55,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       esAdmin: user?.rol === 'admin',
       login: (datos) => entrar('/auth/login', datos),
       registro: (datos) => entrar('/auth/registro', datos),
+      entrarConGoogle: (credential) => entrar('/auth/google', { credential }),
       salir,
       actualizarUsuario: setUser,
     }),

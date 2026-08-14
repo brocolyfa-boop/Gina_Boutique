@@ -42,6 +42,11 @@ export const cambiarPasswordSchema = z.object({
   nueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
 });
 
+/** El token que devuelve el botón de Google en el navegador. */
+export const googleLoginSchema = z.object({
+  credential: z.string().min(20, 'Falta el token de Google'),
+});
+
 export const recuperarPasswordSchema = z.object({
   email: z.string().trim().toLowerCase().email('Email inválido'),
 });

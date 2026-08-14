@@ -169,6 +169,11 @@ export interface ConfigPublicaDTO {
   moneda: string;
   pixelpayMode: 'sandbox' | 'production';
   metodosPago: MetodoPago[];
+  /**
+   * Client ID de Google, o cadena vacía si no está configurado. No es secreto:
+   * está pensado para viajar al navegador. Vacío = no se muestra el botón.
+   */
+  googleClientId: string;
 }
 
 export interface Paginado<T> {

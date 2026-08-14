@@ -39,6 +39,12 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().default(''),
   NOTIFICAR_EMAIL: z.string().default(''),
   NOTIFICAR_EMAIL_DESDE: z.string().default('Gina Boutique <onboarding@resend.dev>'),
+  /**
+   * Client ID de Google para "Entrar con Google". No es un secreto: viaja al
+   * navegador. Vacío = el botón no se muestra, y la ruta responde que no está
+   * disponible en vez de aceptar cualquier token.
+   */
+  GOOGLE_CLIENT_ID: z.string().default(''),
   /** Número público de la tienda, el del botón de WhatsApp de la web. */
   TIENDA_WHATSAPP: z.string().default(''),
   /** Dirección de la tienda. Solo se usa para redirigir a quien llegue aquí. */

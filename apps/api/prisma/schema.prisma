@@ -34,15 +34,19 @@ enum TipoPromocion {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  nombre       String
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  telefono     String?
-  direccion    String?
-  rol          Rol       @default(cliente)
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id String @id @default(cuid())
+  nombre String
+  email  String @unique
+  /// Nulo cuando la cuenta se creó con Google: no hay contraseña que guardar.
+  /// Esa persona puede ponerse una después con "olvidé mi contraseña".
+  passwordHash String? @map("password_hash")
+  /// `sub` de Google, el identificador que no cambia aunque cambie el correo.
+  googleId  String?  @unique @map("google_id")
+  telefono  String?
+  direccion String?
+  rol       Rol      @default(cliente)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   cart           Cart?
   orders         Order[]
