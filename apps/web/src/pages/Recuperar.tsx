@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { MARCA } from '@gina/shared';
+import { useQuery } from '@tanstack/react-query';
+import type { ConfigPublicaDTO } from '@gina/shared';
+import { MARCA, enlaceWhatsApp } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
 import { Aviso } from '../components/ui';
 import { useTitulo } from '../lib/titulo';
@@ -29,7 +31,7 @@ export default function Recuperar() {
         <p className="mt-2 text-sm text-suave">
           {token
             ? 'Escríbela dos veces para no equivocarte.'
-            : 'Escribe tu correo y te mandamos un enlace para crear una nueva.'}
+            : 'Escribe tu correo y te ayudamos a recuperar tu cuenta.'}
         </p>
       </div>
 
@@ -50,6 +52,18 @@ function Pedir() {
   const [listo, setListo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Mientras la tienda no tenga envío de correo, prometer uno sería mentir: el
+  // cliente esperaría en su bandeja algo que nunca va a llegar.
+  const { data: config } = useQuery({
+    queryKey: ['config'],
+    queryFn: () => api<ConfigPublicaDTO>('/config'),
+  });
+  const hayCorreo = config?.correoConfigurado ?? false;
+  const whatsapp = enlaceWhatsApp(
+    MARCA.redes.whatsapp,
+    'Hola, olvidé la contraseña de mi cuenta y necesito ayuda para recuperarla.',
+  );
+
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -58,7 +72,7 @@ function Pedir() {
       await api('/auth/recuperar', { method: 'POST', body: { email } });
       setListo(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No pudimos enviar el correo. Intenta de nuevo.');
+      setError(err instanceof ApiError ? err.message : 'No pudimos procesar tu solicitud. Intenta de nuevo.');
     } finally {
       setEnviando(false);
     }
@@ -72,16 +86,33 @@ function Pedir() {
   if (listo) {
     return (
       <div className="tarjeta mt-8 p-6 text-center">
-        <p className="text-sm">
-          Si <strong>{email}</strong> tiene una cuenta, ya le mandamos un enlace para crear la
-          contraseña nueva.
-        </p>
-        <p className="mt-3 text-xs text-suave">
-          Revisa también la carpeta de correo no deseado. El enlace vence en una hora.
-        </p>
-        <p className="mt-5 text-xs text-suave">
-          ¿No te llegó? Escríbenos por WhatsApp al {MARCA.redes.whatsapp} y te ayudamos.
-        </p>
+        {hayCorreo ? (
+          <>
+            <p className="text-sm">
+              Si <strong>{email}</strong> tiene una cuenta, ya le mandamos un enlace para crear la
+              contraseña nueva.
+            </p>
+            <p className="mt-3 text-xs text-suave">
+              Revisa también la carpeta de correo no deseado. El enlace vence en una hora.
+            </p>
+            <p className="mt-5 text-xs text-suave">
+              ¿No te llegó? Escríbenos por WhatsApp al {MARCA.redes.whatsapp} y te ayudamos.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm">Registramos tu solicitud.</p>
+            <p className="mt-3 text-sm text-suave">
+              Por ahora recuperamos las contraseñas por WhatsApp: escríbenos y te devolvemos el
+              acceso a tu cuenta el mismo día.
+            </p>
+            {whatsapp && (
+              <a href={whatsapp} target="_blank" rel="noreferrer" className="btn-principal mt-5">
+                Escribirnos por WhatsApp
+              </a>
+            )}
+          </>
+        )}
       </div>
     );
   }
@@ -103,7 +134,7 @@ function Pedir() {
       {error && <Aviso>{error}</Aviso>}
 
       <button type="submit" disabled={enviando} className="btn-principal w-full">
-        {enviando ? 'Enviando…' : 'Enviarme el enlace'}
+        {enviando ? 'Enviando…' : hayCorreo ? 'Enviarme el enlace' : 'Continuar'}
       </button>
     </form>
   );
