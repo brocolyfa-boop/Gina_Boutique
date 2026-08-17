@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F0F2F5;color:#1a1a1a;min-height:100vh;}
+.header{background:#fff;padding:22px 0 18px;text-align:center;border-bottom:3px solid #1B5E20;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.header img{height:100px;margin-bottom:10px;}
+.header h1{color:#1B5E20;font-size:20px;font-weight:700;}
+.header p{color:#888;font-size:13px;margin-top:3px;}
+.container{max-width:800px;margin:0 auto;padding:22px 14px 60px;}
+.section{background:#fff;border:1px solid #E0E0E0;border-radius:10px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.sec-title{font-size:12px;font-weight:700;color:#1B5E20;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #E8F5E9;display:flex;align-items:center;gap:8px;}
+.badge{background:#1B5E20;color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.tc{border:1px solid #E0E0E0;border-radius:8px;padding:10px 12px;background:#FAFAFA;}
+.tc.full{grid-column: 1 / -1;}
+.tl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;}
+.tv{font-size:14px;font-weight:600;color:#1a1a1a;}
+.fg{display:flex;flex-direction:column;margin-bottom:12px;}
+.fg label{font-size:11px;font-weight:700;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
+.fg input, .fg textarea{padding:9px 11px;border:1px solid #CCC;border-radius:7px;font-size:14px;color:#1a1a1a;background:#FAFAFA;font-family:inherit;}
+.fg textarea{resize:vertical;}
+.fg input:focus, .fg textarea:focus{outline:none;border-color:#2E7D32;background:#fff;box-shadow:0 0 0 3px rgba(46,125,50,.1);}
+.btn-area{text-align:center;margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn{border:none;padding:14px 36px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;letter-spacing:.3px;text-transform:uppercase;transition:background .2s;box-shadow:0 2px 6px rgba(0,0,0,.15);color:#fff;}
+.btn-ok{background:#1B5E20;} .btn-ok:hover{background:#2E7D32;}
+.btn-rech{background:#C62828;} .btn-rech:hover{background:#D32F2F;}
+.ov{display:none;position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:1000;justify-content:center;align-items:center;flex-direction:column;}
+.ov.show{display:flex;}
+.sp{width:46px;height:46px;border:4px solid #E0E0E0;border-top-color:#1B5E20;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg{border-radius:10px;padding:16px 20px;font-size:14px;font-weight:600;text-align:center;display:none;margin-top:16px;}
+.msg-ok{background:#E8F5E9;color:#1B5E20;border:1px solid #A5D6A7;display:block;}
+.msg-err{background:#FFEBEE;color:#B71C1C;border:1px solid #FFCDD2;display:block;}
+@media(max-width:600px){.tgrid,.btn-area{grid-template-columns:1fr;flex-direction:column;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="https://lh3.googleusercontent.com/d/16SyqDLYNo8X9z18-W5xW3OUzOf54NrVC" alt="Logo">
+  <h1>Verificación de Almacén</h1>
+  <p>REG-AD-15 | Planta de Deshidratados</p>
+</div>
+
+<div class="container">
+  <div id="loading" style="text-align:center;padding:60px;color:#888;">⏳ Cargando registro, por favor espera...</div>
+
+  <div id="main" style="display:none;">
+    
+    <div class="section">
+      <div class="sec-title"><span class="badge">1</span> Información General</div>
+      <div class="tgrid">
+        <div class="tc"><div class="tl">Fecha</div><div class="tv" id="d-fecha">—</div></div>
+        <div class="tc"><div class="tl">Hora</div><div class="tv" id="d-hora">—</div></div>
+        <div class="tc"><div class="tl">Turno</div><div class="tv" id="d-turno">—</div></div>
+        <div class="tc"><div class="tl">Elaborado por</div><div class="tv" id="d-elaborado">—</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-title"><span class="badge">2</span> Producto</div>
+      <div class="tgrid">
+        <div class="tc full"><div class="tl">Descripción</div><div class="tv" id="d-desc">—</div></div>
+        <div class="tc"><div class="tl">Código</div><div class="tv" id="d-codigo">—</div></div>
+        <div class="tc"><div class="tl">Presentación</div><div class="tv" id="d-presenta">—</div></div>
+        <div class="tc"><div class="tl">Lote</div><div class="tv" id="d-lote">—</div></div>
+        <div class="tc"><div class="tl">Bodega</div><div class="tv" id="d-bodega">—</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-title"><span class="badge">3</span> Cantidades</div>
+      <div class="tgrid">
+        <div class="tc"><div class="tl">Cantidad Producida</div><div class="tv" id="d-cantidad">—</div></div>
+        <div class="tc"><div class="tl">Cantidad Separada (ST)</div><div class="tv" id="d-st">—</div></div>
+      </div>
+    </div>
+
+    <div class="section" id="sec-form">
+      <div class="sec-title"><span class="badge">✓</span> Decisión de Almacén</div>
+      <div class="fg">
+        <label>Nombre del Responsable *</label>
+        <input type="text" id="responsable" placeholder="Escribe tu nombre completo">
+      </div>
+      <div class="fg">
+        <label>Observaciones (Obligatorio si se rechaza)</label>
+        <textarea id="observacion" rows="3" placeholder="Ingresa el motivo del rechazo u observaciones adicionales..."></textarea>
+      </div>
+
+      <div class="btn-area">
+        <button class="btn btn-ok"   id="btn-ok"   onclick="enviar('aprobar')">✅ APROBAR</button>
+        <button class="btn btn-rech" id="btn-rech" onclick="enviar('rechazar')">❌ RECHAZAR</button>
+      </div>
+    </div>
+
+    <div class="msg" id="msg"></div>
+
+  </div>
+</div>
+
+<div class="ov" id="ov"><div class="sp"></div><p style="margin-top:14px;color:#fff;">Guardando decisión...</p></div>
+
+<script>
+  var REF = '<?= ref ?>';
+
+  function mostrarMsg(texto, tipo) {
+    var el = document.getElementById('msg');
+    el.textContent = texto;
+    el.className   = 'msg ' + (tipo === 'ok' ? 'msg-ok' : 'msg-err');
+  }
+
+  function cargar() {
+    if (!REF || REF.trim() === '') {
+      document.getElementById('loading').innerHTML = '<p style="color:#C62828;">⚠️ No se recibió referencia válida.</p>';
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(function(r) {
+        document.getElementById('loading').style.display = 'none';
+        if (!r || !r.ok) {
+          document.getElementById('loading').style.display = 'block';
+          document.getElementById('loading').innerHTML = '<p style="color:#C62828;">⚠️ ' + (r ? r.error : 'Sin respuesta del servidor') + '</p>';
+          return;
+        }
+        poblar(r);
+        document.getElementById('main').style.display = 'block';
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('loading').innerHTML = '<p style="color:#C62828;">⚠️ Error: ' + e.message + '</p>';
+      })
+      .getRegistro(REF);
+  }
+
+  function poblar(r) {
+    document.getElementById('d-fecha').textContent     = r.fecha        || '—';
+    document.getElementById('d-hora').textContent      = r.hora         || '—';
+    document.getElementById('d-turno').textContent     = r.turno        || '—';
+    document.getElementById('d-elaborado').textContent = r.elaborado    || '—';
+    document.getElementById('d-desc').textContent      = r.descripcion  || '—';
+    document.getElementById('d-codigo').textContent    = r.codigo       || '—';
+    document.getElementById('d-presenta').textContent  = r.presentacion || '—';
+    document.getElementById('d-lote').textContent      = r.lote         || '—';
+    document.getElementById('d-bodega').textContent    = r.bodega       || '—';
+    document.getElementById('d-cantidad').textContent  = r.cantidad     || '—';
+    
+    document.getElementById('d-st').textContent        = r.stCantidad ? r.stCantidad + ' KG' : 'N/A';
+
+    var est = (r.autAlm || '').toUpperCase();
+    if (est === 'APROBADO' || est === 'RECHAZADO') {
+      document.getElementById('sec-form').style.display = 'none';
+      mostrarMsg(
+        (est === 'APROBADO' ? '✅' : '❌') + ' Este registro ya fue ' + est + ' por Almacén.',
+        est === 'APROBADO' ? 'ok' : 'err'
+      );
+    }
+  }
+
+  function enviar(decision) {
+    var nombre = document.getElementById('responsable').value.trim();
+    var observacion = document.getElementById('observacion').value.trim(); // Captura la observación
+
+    if (!nombre) { alert('⚠️ Ingresa tu nombre antes de continuar.'); document.getElementById('responsable').focus(); return; }
+
+    // VALIDACIÓN: Si rechaza, debe escribir una observación
+    if (decision === 'rechazar' && !observacion) {
+      alert('⚠️ Debes ingresar el motivo del rechazo en el campo de Observaciones.');
+      document.getElementById('observacion').focus();
+      return; 
+    }
+
+    var accion = decision === 'aprobar' ? 'APROBAR' : 'RECHAZAR';
+    if (!confirm('¿Confirmas ' + accion + ' este registro?\n\nResponsable: ' + nombre)) return;
+    
+    document.getElementById('ov').classList.add('show');
+    
+    google.script.run
+      .withSuccessHandler(function(r) {
+        document.getElementById('ov').classList.remove('show');
+        if (r && r.ok) {
+          document.getElementById('sec-form').style.display = 'none';
+          mostrarMsg(
+            decision === 'aprobar' ? '✅ Registro APROBADO. Se notificará al Supervisor.' : '❌ Registro RECHAZADO correctamente.',
+            decision === 'aprobar' ? 'ok' : 'err'
+          );
+        } else {
+          mostrarMsg('⚠️ Error: ' + (r ? r.error : 'Sin respuesta'), 'err');
+        }
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('ov').classList.remove('show');
+        mostrarMsg('⚠️ Error de conexión: ' + e.message, 'err');
+      })
+      // AHORA MANDAMOS LA OBSERVACIÓN COMO CUARTO PARÁMETRO
+      .aprobarAlmacen(REF, nombre, decision, observacion); 
+  }
+
+  window.onload = cargar;
+</script>
+</body>
+</html>

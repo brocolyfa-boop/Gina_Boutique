@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #F0F2F5; color: #1a1a1a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
+  
+  .header { background: #fff; padding: 18px 0 14px; text-align: center; border-bottom: 3px solid #1B5E20; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .header img { height: 80px; margin-bottom: 8px; }
+  .header h1 { color: #1B5E20; font-size: 20px; font-weight: 700; }
+  .header p { color: #888; font-size: 13px; margin-top: 3px; }
+  
+  .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  
+  .section { background: #fff; border: 1px solid #E0E0E0; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .sec-title { font-size: 13px; font-weight: 700; color: #1B5E20; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #E8F5E9; display: flex; align-items: center; gap: 8px; }
+  
+  .badge { background: #1B5E20; color: #fff; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+  
+  .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .fg { flex: 1 1 240px; display: flex; flex-direction: column; min-width: 0; }
+  .fg label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .3px; }
+  .fg input, .fg select, .fg textarea { padding: 11px 12px; border: 1px solid #CCC; border-radius: 7px; font-size: 15px; color: #1a1a1a; background: #FAFAFA; font-family: inherit; transition: border-color .2s; width: 100%; }
+  .fg input:focus, .fg select:focus, .fg textarea:focus { outline: none; border-color: #2E7D32; background: #fff; box-shadow: 0 0 0 3px rgba(46,125,50,.1); }
+  .fg input[readonly] { background: #F0F0F0; color: #555; }
+  
+  .auto-chips { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .chip { flex: 1 1 200px; background: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 7px; padding: 8px 12px; font-size: 11px; color: #888; font-weight: 600; }
+  .chip span { font-weight: 700; font-size: 13px; color: #1a1a1a; display: block; margin-top: 2px; }
+  
+  .sw { position: relative; }
+  .si { width: 100%; padding: 11px 12px 11px 38px; border: 1px solid #CCC; border-radius: 7px; font-size: 15px; background: #FAFAFA; font-family: inherit; }
+  .si:focus { outline: none; border-color: #2E7D32; background: #fff; box-shadow: 0 0 0 3px rgba(46,125,50,.1); }
+  .sico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 16px; pointer-events: none; }
+  .sdrop { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; max-height: 260px; overflow-y: auto; z-index: 999; display: none; box-shadow: 0 6px 16px rgba(0,0,0,.1); }
+  .di { padding: 11px 14px; cursor: pointer; border-bottom: 1px solid #F5F5F5; font-size: 14px; }
+  .di:hover, .di:active { background: #E8F5E9; }
+  .dc { font-weight: 700; color: #1B5E20; font-size: 13px; }
+  .dd { color: #333; }
+  .dp { color: #aaa; font-size: 12px; }
+  .de { padding: 12px; text-align: center; color: #aaa; font-size: 13px; }
+  
+  .sprod { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 7px; margin-top: 6px; }
+  .sprod .si2 { flex: 1; font-size: 14px; color: #1B5E20; font-weight: 600; }
+  .sprod .si2 span { font-weight: 400; color: #555; }
+  .sprod .xb { background: none; border: none; color: #C62828; font-size: 22px; cursor: pointer; padding: 4px 8px; }
+  
+  .tgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .tc { border: 1px solid #E0E0E0; border-radius: 8px; padding: 12px 14px; background: #FAFAFA; }
+  .tbadge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+  .tf { background: #FFEBEE; color: #C62828; }
+  .tnf { background: #E3F2FD; color: #1565C0; }
+  .ta { background: #F3E5F5; color: #6A1B9A; }
+  .tl { font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase; margin-bottom: 8px; }
+  
+  .rr { display: flex; gap: 16px; }
+  .ro { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; cursor: pointer; padding: 4px 2px; }
+  .ro input[type=radio] { accent-color: #2E7D32; width: 18px; height: 18px; }
+  
+  .yn { display: flex; gap: 10px; }
+  .yb { flex: 1; padding: 12px 8px; border: 2px solid #D0D0D0; border-radius: 8px; background: #FAFAFA; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; transition: all .15s; min-height: 48px; }
+  .yb.si.act { background: #E8F5E9; border-color: #2E7D32; color: #1B5E20; }
+  .yb.no.act { background: #FFEBEE; border-color: #C62828; color: #C62828; }
+  
+  .strow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FFFDE7; border: 1px solid #FFE082; border-radius: 8px; margin-bottom: 12px; cursor: pointer; }
+  .strow input[type=checkbox] { accent-color: #2E7D32; width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
+  .strow label { font-size: 14px; font-weight: 600; color: #555; cursor: pointer; }
+  .stsec { display: none; }
+  
+  .st-card { background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
+  .st-card .st-cod { font-size: 12px; font-weight: 700; color: #1B5E20; text-transform: uppercase; margin-bottom: 2px; }
+  .st-card .st-desc { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+  
+  .fallo-alert { display: none; background: #FFF3E0; border: 2px solid #FF9800; border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; font-size: 14px; color: #E65100; font-weight: 600; }
+  
+  .btn-area { text-align: center; margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { border: none; padding: 14px 32px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; letter-spacing: .3px; text-transform: uppercase; transition: background .2s; box-shadow: 0 2px 6px rgba(0,0,0,.15); min-height: 50px; flex: 1 1 220px; max-width: 380px; }
+  .btn-alm { background: #1565C0; color: #fff; }
+  .btn-alm:hover { background: #1976D2; }
+  .btn-cal { background: #7c3aed; color: #fff; display: none; }
+  .btn-cal:hover { background: #6d28d9; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  
+  .ov { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.92); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+  .ov.show { display: flex; }
+  .sp { width: 46px; height: 46px; border: 4px solid #E0E0E0; border-top-color: #1B5E20; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .ov p { margin-top: 14px; font-size: 14px; color: #555; }
+  
+  .succ { display: none; background: #fff; border: 1px solid #A5D6A7; border-radius: 14px; padding: 40px; text-align: center; max-width: 480px; margin: 60px auto; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+  .succ h2 { color: #1B5E20; margin: 14px 0 8px; }
+  .succ p { color: #555; font-size: 14px; }
+  
+  .rtag { display: inline-block; background: #E8F5E9; color: #1B5E20; font-weight: 700; padding: 8px 20px; border-radius: 20px; margin: 12px 0 20px; font-size: 14px; }
+  .btn-nv { background: #1B5E20; color: #fff; border: none; padding: 12px 30px; font-size: 14px; font-weight: 600; border-radius: 7px; cursor: pointer; }
+  
+  @media (min-width: 900px) and (orientation: landscape) {
+    .container { max-width: 1100px; padding: 24px 24px 60px; }
+    .section { padding: 22px 26px; }
+    .tgrid { grid-template-columns: repeat(3, 1fr); }
+    .row .fg { flex: 1 1 0; }
+  }
+  @media (min-width: 600px) and (max-width: 1024px) and (orientation: portrait) {
+    .container { max-width: 760px; padding: 22px 18px 60px; }
+    .tgrid { grid-template-columns: repeat(2, 1fr); }
+    .header img { height: 90px; }
+    .header h1 { font-size: 22px; }
+  }
+  @media (max-width: 599px) {
+    .container { padding: 14px 10px 40px; }
+    .row { flex-direction: column; gap: 10px; }
+    .fg { flex: 1 1 100%; }
+    .auto-chips { flex-direction: column; }
+    .chip { flex: 1 1 100%; }
+    .tgrid { grid-template-columns: 1fr; }
+    .btn-area { flex-direction: column; }
+    .btn { flex: 1 1 100%; max-width: 100%; }
+    .header img { height: 70px; }
+    .header h1 { font-size: 18px; }
+    .sec-title { font-size: 12px; }
+  }
+  @media (pointer: coarse) {
+    .yb, .btn, .ro, .strow input[type=checkbox] { touch-action: manipulation; }
+    .di { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="https://lh3.googleusercontent.com/d/16SyqDLYNo8X9z18-W5xW3OUzOf54NrVC" alt="Logo">
+  <h1>Registro Detector de Metales</h1>
+  <p>REG-PR-DH-24 | Planta de Deshidratados</p>
+</div>
+
+<div class="container" id="formWrap">
+
+  <div class="section">
+    <div class="sec-title"><span class="badge">1</span> Información General</div>
+    <div class="auto-chips">
+      <div class="chip">Fecha y Hora<span id="aFechaHora">—</span></div>
+      <div class="chip">Referencia<span id="aRef" style="font-size:11px;">Cargando...</span></div>
+    </div>
+    <div class="row">
+      <div class="fg">
+        <label>Turno *</label>
+        <select id="turno" required>
+          <option value="">Seleccionar...</option>
+          <option value="Turno A">Turno A</option>
+          <option value="Turno B">Turno B</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Elaborado por *</label>
+        <select id="elaborado_por" required onchange="autoFillEntregado(this.value)">
+          <option value="">— Cargando... —</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title"><span class="badge">2</span> Producto</div>
+    <div class="fg" style="margin-bottom:10px;">
+      <label>Buscar Producto (Código o Descripción) *</label>
+      <div class="sw" id="sw">
+        <span class="sico"> </span>
+        <input type="text" class="si" id="sInput" placeholder="Escriba código o nombre del producto..." autocomplete="off">
+        <div class="sdrop" id="sdrop"></div>
+      </div>
+      <div class="sprod" id="sprod">
+        <div class="si2" id="sprodInfo"></div>
+        <button type="button" class="xb" id="clearProd" title="Quitar">×</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="fg">
+        <label>Bodega *</label>
+        <select id="bodega" required>
+          <option value="">Seleccionar bodega...</option>
+          <option value="AG01 – Almacén Principal">AG01 – Almacén Principal (PT / ST)</option>
+          <option value="AG03 – Almacén de Materia Prima">AG03 – Almacén de Materia Prima (MP)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Código</label>
+        <input type="text" id="fCod" readonly>
+      </div>
+    </div>
+    <div class="row">
+      <div class="fg">
+        <label>Presentación</label>
+        <input type="text" id="fPres" readonly>
+      </div>
+      <div class="fg">
+        <label>Lote *</label>
+        <input type="text" id="fLote" placeholder="Ej. L-2026-001" required>
+      </div>
+    </div>
+    <div class="row">
+      <div class="fg">
+        <label>Descripción</label>
+        <input type="text" id="fDesc" readonly>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="secTestigos">
+    <div class="sec-title"><span class="badge">3</span> Verificación de Testigos</div>
+    <p style="font-size:13px;color:#888;margin-bottom:12px;"><strong>SI</strong> = detector detectó el testigo (correcto) | <strong>NO</strong> = no detectó (fallo del equipo)</p>
+    
+    <div style="font-size:12px;font-weight:700;color:#1B5E20;text-transform:uppercase;margin-bottom:8px;">Testigos Esféricos</div>
+    <div class="tgrid">
+      <div class="tc"><div class="tbadge tnf">No Ferroso</div><div class="tl">1.5 mm</div><div class="rr"><label class="ro"><input type="radio" name="t_noferr15" value="SI"> SI</label><label class="ro"><input type="radio" name="t_noferr15" value="NO"> NO</label></div></div>
+      <div class="tc"><div class="tbadge tf">Ferroso</div><div class="tl">1.5 mm</div><div class="rr"><label class="ro"><input type="radio" name="t_ferr15" value="SI"> SI</label><label class="ro"><input type="radio" name="t_ferr15" value="NO"> NO</label></div></div>
+      <div class="tc"><div class="tbadge ta">Acero Inox.</div><div class="tl">2.0 mm</div><div class="rr"><label class="ro"><input type="radio" name="t_acero20" value="SI"> SI</label><label class="ro"><input type="radio" name="t_acero20" value="NO"> NO</label></div></div>
+    </div>
+    
+    <div style="font-size:12px;font-weight:700;color:#1B5E20;text-transform:uppercase;margin:14px 0 8px;">Testigos de Barra</div>
+    <div class="tgrid">
+      <div class="tc"><div class="tbadge tf">Ferroso</div><div class="tl">1.5 mm</div><div class="rr"><label class="ro"><input type="radio" name="t_ferr15b" value="SI"> SI</label><label class="ro"><input type="radio" name="t_ferr15b" value="NO"> NO</label></div></div>
+      <div class="tc"><div class="tbadge tf">Ferroso</div><div class="tl">2.0 mm</div><div class="rr"><label class="ro"><input type="radio" name="t_ferro20" value="SI"> SI</label><label class="ro"><input type="radio" name="t_ferro20" value="NO"> NO</label></div></div>
+      <div class="tc"><div class="tbadge tnf">No Ferroso</div><div class="tl">2.0 mm</div><div class="rr"><label class="ro"><input type="radio" name="t_noferr20" value="SI"> SI</label><label class="ro"><input type="radio" name="t_noferr20" value="NO"> NO</label></div></div>
+      <div class="tc"><div class="tbadge ta">Acero Inox.</div><div class="tl">2.5 mm</div><div class="rr"><label class="ro"><input type="radio" name="t_acer25" value="SI"> SI</label><label class="ro"><input type="radio" name="t_acer25" value="NO"> NO</label></div></div>
+    </div>
+    
+    <div class="fg" style="margin-top:12px;">
+      <label>Observaciones del equipo</label>
+      <textarea id="obs_testigos" rows="2" placeholder="Opcional..."></textarea>
+    </div>
+  </div>
+
+  <div class="section" id="secPCC">
+    <div class="sec-title"><span class="badge">4</span> PCC – Detector de Metales</div>
+    <div class="row" style="align-items:flex-end;">
+      <div class="fg">
+        <label>¿El detector marcó algún producto? (1ra vez)</label>
+        <div class="yn">
+          <button type="button" class="yb si" onclick="setYN(this,'marcador1','SI')">✓ SI</button>
+          <button type="button" class="yb no" onclick="setYN(this,'marcador1','NO')">✗ NO</button>
+        </div>
+        <input type="hidden" id="marcador1" value="">
+      </div>
+    </div>
+    
+    <div id="sec2extra" style="display:none;">
+      <div class="row">
+        <div class="fg">
+          <label>Corrección aplicada</label>
+          <input type="text" id="correccion" placeholder="Describa la corrección...">
+        </div>
+      </div>
+      <div class="row" style="align-items:flex-end;">
+        <div class="fg">
+          <label>¿El detector volvió a marcar? (2da vez)</label>
+          <div class="yn">
+            <button type="button" class="yb si" onclick="setYN(this,'marcador2','SI')">✓ SI</button>
+            <button type="button" class="yb no" onclick="setYN(this,'marcador2','NO')">✗ NO</button>
+          </div>
+          <input type="hidden" id="marcador2" value="">
+        </div>
+      </div>
+      <div class="fallo-alert" id="falloAlert">
+        El detector marcó producto. El registro se enviará primero a <b>Calidad</b>, y al ser aprobado pasará automáticamente a <b>Almacén</b>.
+      </div>
+    </div>
+    
+    <div class="row" style="margin-top:10px;">
+      <div class="fg">
+        <label>Liberación PPNI – Autorizado por (si aplica)</label>
+        <input type="text" id="autorizado_calidad" placeholder="Nombre del responsable de Calidad">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title"><span class="badge">5</span> Control de Entregas</div>
+    <div class="row">
+      <div class="fg">
+        <label>Cantidad Entregada *</label>
+        <input type="text" id="cantidad_entregada" placeholder="Ej. 200 Bolsas / 100 KG" required>
+      </div>
+      <div class="fg">
+        <label>Observaciones</label>
+        <input type="text" id="obs_cantidad" placeholder="Opcional...">
+      </div>
+    </div>
+
+    <div class="strow">
+      <input type="checkbox" id="chkST" onchange="toggleST(this.checked)">
+      <label for="chkST">¿Este producto lleva ST (Semiterminado)?</label>
+    </div>
+    
+    <div class="stsec" id="stsec">
+      <div class="st-card" id="stCard" style="display:none;">
+        <div class="st-cod" id="stCodLabel">—</div>
+        <div class="st-desc" id="stDescLabel">—</div>
+      </div>
+      <div class="row">
+        <div class="fg">
+          <label>Kilogramos ST</label>
+          <input type="number" id="kilogramos_st" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="fg">
+          <label>Observaciones ST</label>
+          <input type="text" id="obs_st" placeholder="Opcional...">
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:4px;">
+      <div class="fg">
+        <label>Entregado por Producción *</label>
+        <input type="text" id="entregado_por" placeholder="Se llena automáticamente al seleccionar operario">
+      </div>
+      <div class="fg">
+        <label>Fecha de Entrega *</label>
+        <input type="date" id="fecha_entrega">
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-area">
+    <button type="button" class="btn btn-alm" onclick="enviar('ALMACEN')">Enviar a Almacén</button>
+    <button type="button" class="btn btn-cal" id="btnCal" style="display:none" onclick="enviar('CALIDAD')">Enviar a Calidad → Almacén</button>
+  </div>
+</div>
+
+<div class="succ" id="succCard">
+  <div style="width:60px;height:60px;border-radius:50%;background:#1B5E20;margin:0 auto;display:flex;align-items:center;justify-content:center;">
+    <span style="color:#fff;font-size:28px;">✓</span>
+  </div>
+  <h2>¡Registro Enviado!</h2>
+  <p>El registro fue enviado correctamente a las áreas correspondientes.</p>
+  <div class="rtag" id="rtag"></div><br>
+  <button type="button" class="btn-nv" onclick="location.reload()">+ Nuevo Registro</button>
+</div>
+
+<div class="ov" id="ov"><div class="sp"></div><p>Guardando y enviando...</p></div>
+
+<script>
+var PRODS = [], SEL = null, ST_DATA = null;
+
+function quitaAcentos(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+window.onload = function() {
+  setAuto();
+  setInterval(setAuto, 1000);
+  document.getElementById('fecha_entrega').valueAsDate = new Date();
+
+  google.script.run
+    .withSuccessHandler(function(ref) {
+      document.getElementById('aRef').textContent = ref || 'REG-PR-DH-24_?';
+    })
+    .withFailureHandler(function() {
+      document.getElementById('aRef').textContent = 'REG-PR-DH-24_?';
+    })
+    .generarRef();
+
+  google.script.run
+    .withSuccessHandler(function(d) { PRODS = d || []; })
+    .getProductos();
+
+  google.script.run
+    .withSuccessHandler(function(d) {
+      var sel = document.getElementById('elaborado_por');
+      sel.innerHTML = '<option value="">Seleccionar operario...</option>';
+      if (!d || d.length === 0) {
+        sel.innerHTML += '<option disabled>Sin operarios en hoja Personal</option>';
+        return;
+      }
+      d.forEach(function(n) {
+        var o = document.createElement('option');
+        o.value = n; o.textContent = n;
+        sel.appendChild(o);
+      });
+    })
+    .getPersonal();
+};
+
+function setAuto() {
+  var n     = new Date();
+  var fecha = n.toLocaleDateString('es-HN', { day:'2-digit', month:'2-digit', year:'numeric' });
+  var hora  = n.toLocaleTimeString('es-HN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  document.getElementById('aFechaHora').textContent = fecha + ' ' + hora;
+}
+
+function autoFillEntregado(nombre) {
+  document.getElementById('entregado_por').value = nombre;
+}
+
+var inp = document.getElementById('sInput');
+var dd  = document.getElementById('sdrop');
+
+inp.addEventListener('input', function() {
+  var q = quitaAcentos(this.value.trim().toLowerCase());
+  if (q.length < 1) { dd.style.display = 'none'; return; }
+  var r = PRODS.filter(function(p) {
+    var c = quitaAcentos(p.codigo.toLowerCase());
+    var d = quitaAcentos(p.descripcion.toLowerCase());
+    return c.includes(q) || d.includes(q);
+  });
+  dd.innerHTML = r.length ? '' : '<div class="de">Sin resultados</div>';
+  r.slice(0, 50).forEach(function(p) {
+    var el = document.createElement('div'); el.className = 'di';
+    el.innerHTML = '<span class="dc">' + p.codigo + '</span> <span class="dd">' + p.descripcion + '</span><br><span class="dp">' + p.presentacion + '</span>';
+    el.onclick = function() { pick(p); };
+    dd.appendChild(el);
+  });
+  dd.style.display = 'block';
+});
+
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('sw').contains(e.target)) dd.style.display = 'none';
+});
+
+function pick(p) {
+  SEL = p; ST_DATA = null;
+  dd.style.display = 'none';
+  document.getElementById('sw').style.display = 'none';
+  document.getElementById('sprod').style.display = 'flex';
+  document.getElementById('sprodInfo').innerHTML = '<strong>' + p.codigo + '</strong> – ' + p.descripcion + ' <span>(' + p.presentacion + ')</span>';
+  document.getElementById('fCod').value  = p.codigo;
+  document.getElementById('fDesc').value = p.descripcion;
+  document.getElementById('fPres').value = p.presentacion;
+  
+  var px  = p.codigo.substring(0, 2).toUpperCase();
+  var sel = document.getElementById('bodega');
+  if (px === 'MP')                  sel.value = 'AG03 – Almacén de Materia Prima';
+  else if (px === 'PT' || px === 'ST') sel.value = 'AG01 – Almacén Principal';
+  
+  if (px !== 'PT') {
+    document.getElementById('chkST').checked = false;
+    document.getElementById('stsec').style.display = 'none';
+    document.getElementById('chkST').parentElement.style.display = 'none';
+  } else {
+    document.getElementById('chkST').parentElement.style.display = 'flex';
+  }
+
+  // MODIFICACIÓN EXCLUSIVA PARA LOS CÓDIGOS DE LA PESTAÑA DETECTOR
+  if (p.origen === 'Detector') {
+    document.getElementById('secTestigos').style.display = 'none';
+    document.getElementById('secPCC').style.display = 'none';
+    document.querySelector('.btn-alm').style.display = 'inline-block';
+    document.getElementById('btnCal').style.display = 'none';
+    document.getElementById('falloAlert').style.display = 'none';
+  } else {
+    document.getElementById('secTestigos').style.display = 'block';
+    document.getElementById('secPCC').style.display = 'block';
+    actualizarBotones();
+  }
+}
+
+document.getElementById('clearProd').addEventListener('click', function() {
+  SEL = null; ST_DATA = null;
+  document.getElementById('sprod').style.display = 'none';
+  document.getElementById('sw').style.display = 'block';
+  inp.value = ''; inp.focus();
+  ['fCod','fDesc','fPres'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('bodega').value = '';
+  document.getElementById('chkST').checked = false;
+  document.getElementById('stsec').style.display = 'none';
+  document.getElementById('secTestigos').style.display = 'block';
+  document.getElementById('secPCC').style.display = 'block';
+});
+
+function toggleST(checked) {
+  document.getElementById('stsec').style.display = checked ? 'block' : 'none';
+  if (!checked) { document.getElementById('stCard').style.display = 'none'; ST_DATA = null; return; }
+  if (!SEL) { alert('Primero selecciona un producto.'); document.getElementById('chkST').checked = false; return; }
+  var card = document.getElementById('stCard');
+  document.getElementById('stCodLabel').textContent = 'Buscando ST...';
+  document.getElementById('stDescLabel').textContent = '';
+  card.style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(st) {
+      if (st) {
+        ST_DATA = st;
+        document.getElementById('stCodLabel').textContent  = 'Código ST: ' + st.codigo;
+        document.getElementById('stDescLabel').textContent = st.descripcion;
+      } else {
+        document.getElementById('stCodLabel').textContent  = 'Sin ST relacionado para este producto';
+        document.getElementById('stDescLabel').textContent = '';
+      }
+    })
+    .withFailureHandler(function() { document.getElementById('stCodLabel').textContent = 'Error al buscar ST'; })
+    .getSTparaPT(SEL.codigo);
+}
+
+function setYN(btn, fld, val) {
+  btn.closest('.yn').querySelectorAll('.yb').forEach(function(b) { b.classList.remove('act'); });
+  btn.classList.add('act');
+  document.getElementById(fld).value = val;
+  if (fld === 'marcador1') {
+    document.getElementById('sec2extra').style.display = val === 'SI' ? 'block' : 'none';
+    if (val === 'NO') document.getElementById('marcador2').value = '';
+  }
+  actualizarBotones();
+}
+
+function actualizarBotones() {
+  var m1     = document.getElementById('marcador1').value;
+  var btnAlm = document.querySelector('.btn-alm');
+  var btnCal = document.getElementById('btnCal');
+  var alert  = document.getElementById('falloAlert');
+  if (m1 === 'SI') {
+    btnAlm.style.display = 'none';
+    btnCal.style.display = 'inline-block';
+    alert.style.display  = 'block';
+  } else {
+    btnAlm.style.display = 'inline-block';
+    btnCal.style.display = 'none';
+    alert.style.display  = 'none';
+  }
+}
+
+function getR(name) {
+  var r = document.getElementsByName(name);
+  for (var i = 0; i < r.length; i++) if (r[i].checked) return r[i].value;
+  return '';
+}
+
+function validar() {
+  if (!document.getElementById('turno').value)              { alert('Seleccione el turno.');                          return false; }
+  if (!document.getElementById('elaborado_por').value)      { alert('Seleccione quién elabora.');                    return false; }
+  if (!SEL)                                                  { alert('Seleccione un producto.');                      return false; }
+  if (!document.getElementById('bodega').value)             { alert('Seleccione la bodega.');                        return false; }
+  if (!document.getElementById('fLote').value.trim())       { alert('Ingrese el lote.');                             return false; }
+  
+  // CONDICIONAL: Saltar validaciones de testigos si el producto viene de la hoja 'Detector'
+  if (!SEL || SEL.origen !== 'Detector') {
+    var ts = ['t_noferr15','t_ferr15','t_acero20','t_ferr15b','t_ferro20','t_noferr20','t_acer25'];
+    for (var i = 0; i < ts.length; i++) { if (!getR(ts[i])) { alert('Responda todos los testigos.');                  return false; } }
+    if (!document.getElementById('marcador1').value)                 { alert('Indique si el detector marcó (1ra vez).'); return false; }
+  }
+  
+  if (!document.getElementById('cantidad_entregada').value.trim()) { alert('Ingrese la cantidad entregada.');        return false; }
+  if (!document.getElementById('entregado_por').value.trim())      { alert('Ingrese quién entrega.');               return false; }
+  if (!document.getElementById('fecha_entrega').value)             { alert('Ingrese la fecha de entrega.');         return false; }
+  return true;
+}
+
+function enviar(dest) {
+  if (!validar()) return;
+  var btns = document.querySelectorAll('.btn');
+  btns.forEach(function(b) { b.disabled = true; });
+  document.getElementById('ov').classList.add('show');
+
+  var data = {
+    destino:            dest,
+    turno:              document.getElementById('turno').value,
+    elaborado_por:      document.getElementById('elaborado_por').value,
+    codigo:             SEL.codigo,
+    descripcion:        SEL.descripcion,
+    presentacion:       SEL.presentacion,
+    bodega:             document.getElementById('bodega').value,
+    lote:               document.getElementById('fLote').value.trim(),
+    cantidad_entregada: document.getElementById('cantidad_entregada').value.trim(),
+    kilogramos_st:      document.getElementById('kilogramos_st').value || '',
+    codigo_st:          ST_DATA ? ST_DATA.codigo : '',
+    entregado_por:      document.getElementById('entregado_por').value.trim(),
+    fecha_entrega:      document.getElementById('fecha_entrega').value,
+    
+    // Inyección de N/A en campos del detector si el origen es de la hoja Detector
+    t_noferr15:         (SEL && SEL.origen === 'Detector') ? 'N/A' : getR('t_noferr15'),
+    t_ferr15:           (SEL && SEL.origen === 'Detector') ? 'N/A' : getR('t_ferr15'),
+    t_acero20:          (SEL && SEL.origen === 'Detector') ? 'N/A' : getR('t_acero20'),
+    t_ferr15b:          (SEL && SEL.origen === 'Detector') ? 'N/A' : getR('t_ferr15b'),
+    t_ferro20:          (SEL && SEL.origen === 'Detector') ? 'N/A' : getR('t_ferro20'),
+    t_noferr20:         (SEL && SEL.origen === 'Detector') ? 'N/A' : getR('t_noferr20'),
+    t_acer25:           (SEL && SEL.origen === 'Detector') ? 'N/A' : getR('t_acer25'),
+    obs_testigos:       document.getElementById('obs_testigos').value.trim(),
+    marcador1:          (SEL && SEL.origen === 'Detector') ? 'N/A' : document.getElementById('marcador1').value,
+    marcador2:          (SEL && SEL.origen === 'Detector') ? 'N/A' : (document.getElementById('marcador2').value || 'NO'),
+    correccion:         document.getElementById('correccion').value.trim(),
+    autorizado_calidad: document.getElementById('autorizado_calidad').value.trim()
+  };
+
+  google.script.run
+    .withSuccessHandler(function(r) {
+      document.getElementById('ov').classList.remove('show');
+      if (r.success) {
+        document.getElementById('formWrap').style.display = 'none';
+        document.getElementById('succCard').style.display = 'block';
+        document.getElementById('rtag').textContent = r.referencia;
+      } else {
+        alert('Error: ' + r.error);
+        btns.forEach(function(b) { b.disabled = false; });
+      }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('ov').classList.remove('show');
+      alert('Error: ' + e.message);
+      btns.forEach(function(b) { b.disabled = false; });
+    })
+    .submitOperario(data);
+}
+</script>
+</body>
+</html>

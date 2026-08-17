@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F0F2F5;color:#1a1a1a;min-height:100vh;}
+.header{background:#fff;padding:22px 0 18px;text-align:center;border-bottom:3px solid #1B5E20;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.header img{height:100px;margin-bottom:10px;}
+.header h1{color:#1B5E20;font-size:20px;font-weight:700;}
+.header p{color:#888;font-size:13px;margin-top:3px;}
+.container{max-width:680px;margin:0 auto;padding:22px 14px 60px;}
+.section{background:#fff;border:1px solid #E0E0E0;border-radius:10px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.sec-title{font-size:12px;font-weight:700;color:#1B5E20;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #E8F5E9;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.info-item{background:#F8F8F8;border:1px solid #E0E0E0;border-radius:7px;padding:9px 12px;}
+.info-item .lbl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;}
+.info-item .val{font-size:14px;font-weight:600;color:#1a1a1a;}
+.badge-fallo{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;}
+.fallo-si{background:#FFEBEE;color:#C62828;}
+.fallo-no{background:#E8F5E9;color:#1B5E20;}
+.fg{display:flex;flex-direction:column;margin-bottom:12px;}
+.fg label{font-size:11px;font-weight:700;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
+.fg input{padding:9px 11px;border:1px solid #CCC;border-radius:7px;font-size:14px;color:#1a1a1a;background:#FAFAFA;font-family:inherit;}
+.fg input:focus{outline:none;border-color:#2E7D32;box-shadow:0 0 0 3px rgba(46,125,50,.1);}
+.btn-area{display:flex;gap:12px;justify-content:center;margin-top:22px;flex-wrap:wrap;}
+.btn{border:none;padding:14px 36px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;text-transform:uppercase;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+.btn-apro{background:#1B5E20;color:#fff;}.btn-apro:hover{background:#2E7D32;}
+.btn-rech{background:#C62828;color:#fff;}.btn-rech:hover{background:#D32F2F;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.ov{display:none;position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:1000;justify-content:center;align-items:center;flex-direction:column;}
+.ov.show{display:flex;}
+.sp{width:46px;height:46px;border:4px solid #E0E0E0;border-top-color:#1B5E20;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ov p{margin-top:14px;font-size:14px;color:#555;}
+.result{display:none;text-align:center;padding:60px 20px;}
+.result .icon{font-size:60px;margin-bottom:16px;}
+.result h2{font-size:22px;margin-bottom:8px;}
+.result p{color:#666;font-size:14px;}
+.err{text-align:center;padding:60px 20px;}
+.err .icon{font-size:50px;margin-bottom:16px;}
+.err p{color:#C62828;font-size:15px;font-weight:600;}
+@media(max-width:500px){.info-grid{grid-template-columns:1fr;}.btn-area{flex-direction:column;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="https://lh3.googleusercontent.com/d/16SyqDLYNo8X9z18-W5xW3OUzOf54NrVC" alt="Logo">
+  <h1>Verificación Inspector de Calidad</h1>
+  <p>REG-AD-15 | Revisión de Registro</p>
+</div>
+
+<div class="container">
+  <div id="loading" style="text-align:center;padding:60px;color:#888;">⏳ Cargando registro...</div>
+  <div id="mainContent" style="display:none;">
+    <div class="section">
+      <div class="sec-title">📋 Datos del Registro</div>
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Referencia</div><div class="val" id="d_ref">—</div></div>
+        <div class="info-item"><div class="lbl">Fecha y Hora</div><div class="val" id="d_fecha">—</div></div>
+        <div class="info-item"><div class="lbl">Turno</div><div class="val" id="d_turno">—</div></div>
+        <div class="info-item"><div class="lbl">Elaborado por</div><div class="val" id="d_elaborado">—</div></div>
+        <div class="info-item"><div class="lbl">Código</div><div class="val" id="d_codigo">—</div></div>
+        <div class="info-item"><div class="lbl">Bodega</div><div class="val" id="d_bodega">—</div></div>
+      </div>
+      <div class="info-grid" style="margin-top:8px;">
+        <div class="info-item" style="grid-column:1/-1"><div class="lbl">Producto</div><div class="val" id="d_desc">—</div></div>
+        <div class="info-item"><div class="lbl">Lote</div><div class="val" id="d_lote">—</div></div>
+        <div class="info-item"><div class="lbl">Presentación</div><div class="val" id="d_pres">—</div></div>
+        <div class="info-item"><div class="lbl">Cantidad Entregada</div><div class="val" id="d_cant">—</div></div>
+        <div class="info-item"><div class="lbl">KG Semi-Terminado</div><div class="val" id="d_st">—</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">🚨 PCC – Resultado Detector</div>
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Fallo Detector 1ra</div><div class="val" id="d_fallo1">—</div></div>
+        <div class="info-item"><div class="lbl">Fallo Detector 2da</div><div class="val" id="d_fallo2">—</div></div>
+        <div class="info-item" style="grid-column:1/-1"><div class="lbl">Corrección aplicada</div><div class="val" id="d_correccion">—</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">✍️ Autorización Inspector de Calidad</div>
+      <div class="fg">
+        <label>Nombre del Inspector *</label>
+        <input type="text" id="nombreInspector" placeholder="Ingrese su nombre completo" required>
+      </div>
+      <div class="btn-area">
+        <button type="button" class="btn btn-apro" onclick="responder('APROBADO')">✅ Aprobar Registro</button>
+        <button type="button" class="btn btn-rech" onclick="responder('RECHAZADO')">❌ Rechazar Registro</button>
+      </div>
+    </div>
+  </div>
+  <div id="errContent" style="display:none;" class="err">
+    <div class="icon">❌</div>
+    <p id="errMsg">Registro no encontrado.</p>
+  </div>
+  <div id="resultContent" class="result">
+    <div class="icon" id="resIcon"></div>
+    <h2 id="resTitle"></h2>
+    <p id="resMsg"></p>
+  </div>
+</div>
+
+<div class="ov" id="ov"><div class="sp"></div><p>Guardando...</p></div>
+
+<script>
+var REF = '<?= ref ?>';
+
+window.onload = function() {
+  if (!REF) { showErr('No se proporcionó referencia.'); return; }
+  google.script.run
+    .withSuccessHandler(function(r) {
+      document.getElementById('loading').style.display='none';
+      if (!r) { showErr('Registro no encontrado: ' + REF); return; }
+      document.getElementById('mainContent').style.display='block';
+      document.getElementById('d_ref').textContent        = r.ref||'—';
+      document.getElementById('d_fecha').textContent      = r.fecha||'—';
+      document.getElementById('d_turno').textContent      = r.turno||'—';
+      document.getElementById('d_elaborado').textContent  = r.elaborado||'—';
+      document.getElementById('d_codigo').textContent     = r.codigo||'—';
+      document.getElementById('d_bodega').textContent     = r.bodega||'—';
+      document.getElementById('d_desc').textContent       = r.descripcion||'—';
+      document.getElementById('d_lote').textContent       = r.lote||'—';
+      document.getElementById('d_pres').textContent       = r.presentacion||'—';
+      document.getElementById('d_cant').textContent       = r.cantidad||'—';
+      document.getElementById('d_st').textContent         = r.st||'N/A';
+      document.getElementById('d_fallo1').innerHTML       = badge(r.fallo1);
+      document.getElementById('d_fallo2').innerHTML       = badge(r.fallo2);
+      document.getElementById('d_correccion').textContent = r.desviacion||'N/A';
+    })
+    .withFailureHandler(function(e){ document.getElementById('loading').style.display='none'; showErr('Error: '+e.message); })
+    .getRegistro(REF);
+};
+
+function badge(val) {
+  var v = String(val).toUpperCase();
+  return '<span class="badge-fallo '+(v==='SI'?'fallo-si':'fallo-no')+'">'+v+'</span>';
+}
+
+function showErr(msg) {
+  document.getElementById('errContent').style.display='block';
+  document.getElementById('errMsg').textContent=msg;
+}
+
+function responder(decision) {
+  var nombre = document.getElementById('nombreInspector').value.trim();
+  if (!nombre) { alert('Ingrese su nombre para continuar.'); return; }
+  document.querySelectorAll('.btn').forEach(function(b){ b.disabled=true; });
+  document.getElementById('ov').classList.add('show');
+  
+  google.script.run
+    .withSuccessHandler(function(r){
+      document.getElementById('ov').classList.remove('show');
+      document.getElementById('mainContent').style.display='none';
+      var ok=decision==='APROBADO';
+      document.getElementById('resIcon').textContent  = ok?'✅':'❌';
+      document.getElementById('resTitle').textContent = ok?'Registro Aprobado':'Registro Rechazado';
+      document.getElementById('resTitle').style.color = ok?'#1B5E20':'#C62828';
+      document.getElementById('resMsg').textContent   = 'Referencia: '+REF;
+      document.getElementById('resultContent').style.display='block';
+    })
+    .withFailureHandler(function(e){
+      document.getElementById('ov').classList.remove('show');
+      alert('Error: '+e.message);
+      document.querySelectorAll('.btn').forEach(function(b){ b.disabled=false; });
+    })
+    .aprobarCalidad(REF, nombre, decision); // --- CORRECCIÓN APLICADA AQUÍ ---
+}
+</script>
+</body>
+</html>
