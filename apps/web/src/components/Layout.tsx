@@ -103,11 +103,6 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Franja de envío: lo primero que un cliente en Honduras quiere saber. */}
-      <div className="bg-tinta py-2 text-center text-[11px] uppercase tracking-etiqueta text-white">
-        Envíos a los 18 departamentos · Entrega en 1 a 2 días
-      </div>
-
       <header className="sticky top-0 z-20 border-b border-borde bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 lg:gap-6 lg:px-8">
           <Link to="/" className="flex shrink-0 items-center gap-3">
