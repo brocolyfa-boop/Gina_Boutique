@@ -68,19 +68,28 @@ export default function Producto() {
 
   const agotado = p.stock === 0;
 
-  const alAgregar = async () => {
+  /** Devuelve si el producto quedó agregado, para que quien la llama sepa si puede seguir. */
+  const alAgregar = async (): Promise<boolean> => {
     setError(null);
     // Se valida aquí y también en el servidor; esto solo evita el viaje de ida.
-    if (p.tallas.length > 0 && !talla) return setError('Elige una talla');
-    if (p.colores.length > 0 && !color) return setError('Elige un color');
+    if (p.tallas.length > 0 && !talla) {
+      setError('Elige una talla');
+      return false;
+    }
+    if (p.colores.length > 0 && !color) {
+      setError('Elige un color');
+      return false;
+    }
 
     setGuardando(true);
     try {
       await agregar(p, { productoId: p.id, cantidad, talla, color });
       setAgregado(true);
       setTimeout(() => setAgregado(false), 2500);
+      return true;
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo agregar al carrito');
+      return false;
     } finally {
       setGuardando(false);
     }
@@ -226,8 +235,8 @@ export default function Producto() {
             </button>
             <button
               onClick={async () => {
-                await alAgregar();
-                if (agotado) return;
+                const agregadoOk = await alAgregar();
+                if (!agregadoOk) return;
                 // "Comprar ahora" exige cuenta: si no ha entrado, la manda a
                 // iniciar con Google antes de seguir. El artículo ya quedó en
                 // su carrito de invitado y se sincroniza sola al entrar.
