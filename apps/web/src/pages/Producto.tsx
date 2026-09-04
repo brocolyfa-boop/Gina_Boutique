@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ProductoDTO } from '@gina/shared';
 import { formatLps } from '@gina/shared';
 import { api, ApiError } from '../lib/api';
+import { useAuth } from '../store/auth';
 import { useCarrito } from '../store/carrito';
 import { Aviso, Imagen, ProductoCard, Skeleton, Vacio } from '../components/ui';
 import GuiaTallas from '../components/GuiaTallas';
@@ -14,6 +15,7 @@ type Detalle = ProductoDTO & { relacionados: ProductoDTO[] };
 export default function Producto() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { agregar } = useCarrito();
 
   const [talla, setTalla] = useState<string | null>(null);
@@ -225,7 +227,11 @@ export default function Producto() {
             <button
               onClick={async () => {
                 await alAgregar();
-                if (!agotado) navigate('/carrito');
+                if (agotado) return;
+                // "Comprar ahora" exige cuenta: si no ha entrado, la manda a
+                // iniciar con Google antes de seguir. El artículo ya quedó en
+                // su carrito de invitado y se sincroniza sola al entrar.
+                navigate(user ? '/carrito' : '/entrar?volver=%2Fcarrito');
               }}
               disabled={agotado || guardando}
               className="btn-secundario flex-1"
