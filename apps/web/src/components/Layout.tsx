@@ -122,14 +122,14 @@ export default function Layout() {
               <NavLink
                 key={c.id}
                 to={`/catalogo?categoria=${c.slug}`}
-                className="text-xs uppercase tracking-etiqueta text-suave transition hover:text-tinta"
+                className="text-sm font-semibold uppercase tracking-etiqueta text-tinta transition hover:text-acento"
               >
                 {c.nombre}
               </NavLink>
             ))}
             <NavLink
               to="/catalogo?enOferta=true"
-              className="text-xs uppercase tracking-etiqueta text-acento"
+              className="text-sm font-semibold uppercase tracking-etiqueta text-acento"
             >
               Ofertas
             </NavLink>
@@ -141,7 +141,7 @@ export default function Layout() {
             </div>
 
             {user ? (
-              <div className="flex items-center gap-3 text-xs uppercase tracking-etiqueta">
+              <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-etiqueta text-tinta">
                 {/*
                   El nombre se oculta en móvil y se trunca en pantallas medianas:
                   un nombre largo empujaba la fila del header fuera de la
@@ -170,12 +170,18 @@ export default function Layout() {
                 </button>
               </div>
             ) : (
-              <Link to="/entrar" className="text-xs uppercase tracking-etiqueta hover:underline">
+              <Link
+                to="/entrar"
+                className="text-sm font-semibold uppercase tracking-etiqueta text-tinta hover:underline"
+              >
                 Entrar
               </Link>
             )}
 
-            <Link to="/carrito" className="relative text-xs uppercase tracking-etiqueta">
+            <Link
+              to="/carrito"
+              className="relative text-sm font-semibold uppercase tracking-etiqueta text-tinta"
+            >
               Carrito
               {unidades > 0 && (
                 <span className="absolute -right-3 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-acento text-[10px] text-white">

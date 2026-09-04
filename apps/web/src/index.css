@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    /* Sube el tamaño base ~12%: como los tamaños de Tailwind están en rem, este
+       único cambio agranda toda la letra de la tienda de forma proporcional. */
+    font-size: 112.5%;
+  }
+
   body {
     @apply bg-fondo text-tinta font-sans antialiased;
   }

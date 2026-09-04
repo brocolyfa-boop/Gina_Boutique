@@ -11,7 +11,7 @@ export default {
         marca: '#FFFFFF',
         tinta: '#111111',
         borde: '#E5E2E0',
-        suave: '#6B6663',
+        suave: '#4A4644',
         fondo: '#FAF9F8',
         superficie: '#FFFFFF',
         acento: '#B03052',
@@ -21,9 +21,7 @@ export default {
       },
       fontFamily: {
         display: ['"Playfair Display"', '"Cormorant Garamond"', 'Georgia', 'serif'],
-        // Arial y Helvetica quedan explícitas en la cadena: si Inter no llega a
-        // cargar, el panel sigue viéndose en una sans neutra y no en la serif.
-        sans: ['Inter', 'Arial', '"Helvetica Neue"', 'Helvetica', 'system-ui', 'sans-serif'],
+        sans: ['Arial', '"Helvetica Neue"', 'Helvetica', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
         etiqueta: '0.18em',

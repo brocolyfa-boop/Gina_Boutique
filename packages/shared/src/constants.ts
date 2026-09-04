@@ -157,8 +157,8 @@ export const MARCA = {
     contraste: '#111111',
     /** Gris cálido para bordes y separadores; el blanco puro necesita límites. */
     borde: '#E5E2E0',
-    /** Texto secundario, precios tachados, metadatos. */
-    textoSuave: '#6B6663',
+    /** Texto secundario, precios tachados, metadatos. Oscurecido para más contraste. */
+    textoSuave: '#4A4644',
     /** Fondo de la página: un blanco roto, para que las tarjetas blancas resalten. */
     fondo: '#FAF9F8',
     /** Superficie de tarjetas y modales: blanco puro. */
